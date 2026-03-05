@@ -1,0 +1,213 @@
+---
+title: Temporal Memory
+description: Understanding time-aware nodes and historical queries
+---
+
+# Temporal Memory
+
+Every node in HyperMemory knows when it was created and when it was last modified. This temporal awareness lets your agent reason about knowledge across time.
+
+## Every node knows when
+
+All nodes automatically track:
+
+| Field | Description |
+|-------|-------------|
+| `created_at` | When the memory was first stored |
+| `updated_at` | When it was last modified |
+
+```json
+{
+  "id": "node_abc123",
+  "content": "Our main competitor is Acme Corp",
+  "node_type": "fact",
+  "created_at": "2026-01-15T10:30:00Z",
+  "updated_at": "2026-02-28T14:22:00Z"
+}
+```
+
+## Why temporal memory matters
+
+### Avoiding stale knowledge
+
+Without temporal context, your agent might act on outdated information:
+
+```
+Agent: "Our main competitor is Acme Corp"
+Reality: Acme Corp was acquired 3 months ago
+```
+
+With temporal queries, your agent can ask: "What do we know about competitors that's been updated in the last month?"
+
+### Understanding evolution
+
+Knowledge changes over time:
+
+```
+January:  "API response time is 200ms"
+February: "API response time is 150ms"  (after optimization)
+March:    "API response time is 100ms"  (after caching)
+```
+
+Temporal queries let you see this progression.
+
+### Point-in-time questions
+
+Sometimes you need historical context:
+
+- "What did we know about the competitor in January?"
+- "What was our understanding before the Q3 decision?"
+- "What changed after the migration?"
+
+## Querying temporal data
+
+### Filter by time range
+
+Use the `time_range` parameter to filter results:
+
+```
+memory_recall(
+  query="What do we know about API performance?",
+  time_range={
+    "start": "2026-02-01T00:00:00Z",
+    "end": "2026-02-28T23:59:59Z"
+  }
+)
+```
+
+This returns only memories created or updated in February 2026.
+
+### Get recent memories
+
+```
+memory_recall(
+  query="What happened this week?",
+  time_range={
+    "start": "2026-03-01T00:00:00Z"
+  }
+)
+```
+
+Omitting `end` means "up to now."
+
+### Get historical snapshot
+
+```
+memory_get_history(
+  node_id="node_abc123",
+  as_of="2026-01-31T23:59:59Z"
+)
+```
+
+Returns what the node looked like at the end of January.
+
+## Version history
+
+Nodes maintain version history. When you update a node, the previous state is preserved:
+
+```
+memory_update(
+  node_id="node_abc123",
+  content="API response time is 100ms after caching improvements"
+)
+```
+
+You can retrieve the history:
+
+```
+memory_get_versions(
+  node_id="node_abc123"
+)
+```
+
+**Response:**
+```json
+{
+  "versions": [
+    {
+      "version": 3,
+      "content": "API response time is 100ms after caching improvements",
+      "updated_at": "2026-03-15T10:00:00Z"
+    },
+    {
+      "version": 2,
+      "content": "API response time is 150ms after optimization",
+      "updated_at": "2026-02-15T10:00:00Z"
+    },
+    {
+      "version": 1,
+      "content": "API response time is 200ms",
+      "created_at": "2026-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+## Common temporal patterns
+
+### Freshness filtering
+
+Prioritize recent information:
+
+```
+memory_recall(
+  query="team preferences",
+  time_range={"start": "2026-01-01T00:00:00Z"},
+  sort_by="updated_at",
+  sort_order="desc"
+)
+```
+
+### Change detection
+
+Find what changed since last check:
+
+```
+memory_recall(
+  query="project status",
+  time_range={
+    "start": last_check_timestamp
+  }
+)
+```
+
+### Historical comparison
+
+Compare knowledge at two points:
+
+```
+january_state = memory_recall(
+  query="Q1 priorities",
+  time_range={"end": "2026-01-31T23:59:59Z"}
+)
+
+march_state = memory_recall(
+  query="Q1 priorities",
+  time_range={"end": "2026-03-31T23:59:59Z"}
+)
+```
+
+## Best practices
+
+<Tip>
+**Include dates in content.** While nodes track timestamps automatically, including dates in the content helps with semantic queries: "Decision made on March 15, 2026" is more discoverable than just "Decision made."
+</Tip>
+
+<Info>
+**Use metadata for structured dates.** For events with specific dates, use metadata: `{"event_date": "2026-03-15"}`. This enables precise filtering.
+</Info>
+
+<Warning>
+**Timestamps are UTC.** All timestamps are stored and returned in UTC. Convert to local time in your application if needed.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="MCP Server Overview" icon="server" href="/mcp-server/overview">
+    Learn how HyperMemory exposes these features
+  </Card>
+  <Card title="memory_recall API" icon="code" href="/api-reference/memory-recall">
+    Full reference for temporal queries
+  </Card>
+</CardGroup>

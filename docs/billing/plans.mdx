@@ -1,0 +1,184 @@
+---
+title: Plans
+description: HyperMemory pricing plans and what's included
+---
+
+# Plans
+
+HyperMemory offers four plans to match different usage needs, from free experimentation to enterprise scale.
+
+## Plan comparison
+
+| Feature | Free | Developer | Pro | Enterprise |
+|---------|------|-----------|-----|------------|
+| **Price** | $0/mo | $29/mo | $99/mo | Custom |
+| **Nodes** | 1,000 | 25,000 | 100,000 | Unlimited |
+| **Queries/mo** | 5,000 | 50,000 | 250,000 | Unlimited |
+| **Graphs** | 1 | 3 | 10 | Unlimited |
+| **API Keys** | 1 | 5 | 20 | Unlimited |
+| **Support** | Community | Email | Priority | Dedicated |
+| **Overages** | Hard limit | $0.50/1K queries | $0.30/1K queries | Custom |
+
+## What counts as usage
+
+### Nodes
+
+A node is a single memory unit — one piece of stored knowledge.
+
+**Examples of 1 node:**
+- "Sarah prefers Slack for async communication"
+- "Project Phoenix deadline is March 31"
+- "Team decided to use PostgreSQL"
+
+**Not counted:**
+- Edges (relationships between nodes)
+- Hyperedges (multi-way relationships)
+- Metadata on nodes
+
+### Queries
+
+A query is any read operation that searches or retrieves data.
+
+**Operations that count as queries:**
+
+| Operation | Queries |
+|-----------|---------|
+| `memory_recall` | 1 |
+| `memory_find_related` | 1 |
+| `memory_get_relationships` | 1 |
+| `memory_export_subgraph` | 1 |
+
+**Operations that don't count:**
+
+| Operation | Cost |
+|-----------|------|
+| `memory_store` | Free |
+| `memory_update` | Free |
+| `memory_forget` | Free |
+| `memory_load_link` | Free |
+
+<Info>
+Write operations are always free. You're only charged for reads.
+</Info>
+
+## Plan details
+
+### Free
+
+Best for experimentation and personal projects.
+
+- **1,000 nodes** — Enough to test the platform
+- **5,000 queries/month** — ~160 queries/day
+- **1 graph** — Single memory space
+- **1 API key** — One integration
+- **Hard limits** — No overages, operations stop at limit
+- **Community support** — Discord, GitHub discussions
+
+### Developer
+
+Best for individual developers and small applications.
+
+- **25,000 nodes** — Substantial knowledge base
+- **50,000 queries/month** — ~1,600 queries/day
+- **3 graphs** — Dev, staging, production
+- **5 API keys** — Multiple integrations
+- **Soft limits** — Pay $0.50 per 1,000 overage queries
+- **Email support** — 48-hour response time
+
+### Pro
+
+Best for teams and production applications.
+
+- **100,000 nodes** — Large knowledge bases
+- **250,000 queries/month** — ~8,000 queries/day
+- **10 graphs** — Multi-project support
+- **20 API keys** — Team-wide access
+- **Soft limits** — Pay $0.30 per 1,000 overage queries
+- **Priority support** — 24-hour response time
+- **SSO** — SAML/OIDC integration
+
+### Enterprise
+
+Best for large organizations and high-volume applications.
+
+- **Unlimited nodes** — No storage limits
+- **Unlimited queries** — No usage limits
+- **Unlimited graphs** — Any organizational structure
+- **Unlimited API keys** — Full team coverage
+- **Custom pricing** — Volume discounts
+- **Dedicated support** — Named account manager
+- **SLA** — Uptime guarantees
+- **Custom features** — On-premises, dedicated infrastructure
+
+## Annual billing
+
+Save 20% with annual billing:
+
+| Plan | Monthly | Annual (per month) | Savings |
+|------|---------|-------------------|---------|
+| Developer | $29 | $23 | $72/year |
+| Pro | $99 | $79 | $240/year |
+| Enterprise | Custom | Custom | Custom |
+
+## Choosing a plan
+
+### Start with Free if:
+
+- You're evaluating HyperMemory
+- Building a personal project
+- Learning how agent memory works
+
+### Upgrade to Developer if:
+
+- You're building a production application
+- Need more than 1,000 nodes
+- Want email support
+
+### Upgrade to Pro if:
+
+- You have a team needing access
+- Running multiple projects
+- Need priority support
+- Require SSO
+
+### Contact Enterprise if:
+
+- You need unlimited usage
+- Require SLA guarantees
+- Need custom integrations
+- Have compliance requirements
+
+## Changing plans
+
+### Upgrading
+
+1. Go to **Settings** → **Billing**
+2. Click **Change Plan**
+3. Select your new plan
+4. Confirm and pay
+
+Upgrades take effect immediately. You're charged a prorated amount for the remainder of the billing cycle.
+
+### Downgrading
+
+1. Go to **Settings** → **Billing**
+2. Click **Change Plan**
+3. Select the lower plan
+4. Confirm
+
+Downgrades take effect at the start of the next billing cycle. Ensure your usage fits within the new plan's limits before the change.
+
+<Warning>
+If your current usage exceeds the new plan's limits (e.g., 30,000 nodes downgrading to Free), you'll need to delete data first.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Tracking" icon="chart-line" href="/billing/usage-tracking">
+    Monitor your usage
+  </Card>
+  <Card title="Overages" icon="coins" href="/billing/overages">
+    Understand overage billing
+  </Card>
+</CardGroup>

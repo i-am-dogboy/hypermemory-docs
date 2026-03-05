@@ -1,0 +1,204 @@
+---
+title: Edges & Hyperedges
+description: Understanding relationships between memory nodes
+---
+
+# Edges & Hyperedges
+
+Relationships are what transform isolated facts into connected knowledge. HyperMemory supports two types: edges (binary) and hyperedges (multi-way).
+
+## Edges (binary relationships)
+
+An edge connects exactly two nodes. It can be directed (A → B) or undirected (A ↔ B).
+
+### Edge structure
+
+```json
+{
+  "id": "edge_xyz789",
+  "source": "node_abc123",
+  "target": "node_def456",
+  "edge_type": "manages",
+  "directed": true,
+  "metadata": {
+    "since": "2026-01",
+    "role": "tech_lead"
+  },
+  "created_at": "2026-01-20T09:00:00Z"
+}
+```
+
+### Common edge types
+
+| Type | Example | Direction |
+|------|---------|-----------|
+| `manages` | Sarah manages Project Alpha | Directed |
+| `depends_on` | Feature B depends on Feature A | Directed |
+| `collaborates_with` | Alice collaborates with Bob | Undirected |
+| `belongs_to` | Task belongs to Sprint | Directed |
+| `related_to` | Concept A related to Concept B | Undirected |
+| `prefers` | User prefers Option | Directed |
+
+### Creating edges
+
+Edges are created automatically when you use the `relationships` parameter in `memory_store`:
+
+```
+memory_store(
+  content="Sarah Chen is the tech lead for Project Alpha",
+  node_type="assignment",
+  relationships=["node_project_alpha"]
+)
+```
+
+Or explicitly via the API:
+
+```
+memory_create_edge(
+  source="node_sarah",
+  target="node_project_alpha",
+  edge_type="manages",
+  directed=true
+)
+```
+
+## Hyperedges (multi-way relationships)
+
+A hyperedge connects three or more nodes in a single relationship. This is HyperMemory's distinguishing feature.
+
+### Hyperedge structure
+
+```json
+{
+  "id": "hedge_qrs101",
+  "nodes": [
+    "node_sarah",
+    "node_marcus",
+    "node_api_v2",
+    "node_q3_planning"
+  ],
+  "edge_type": "decision_context",
+  "content": "Q3 roadmap planning decision",
+  "metadata": {
+    "date": "2026-02-01",
+    "outcome": "approved",
+    "confidence": "high"
+  },
+  "created_at": "2026-02-01T15:00:00Z"
+}
+```
+
+### When to use hyperedges
+
+| Scenario | Why hyperedge? |
+|----------|---------------|
+| Decision with multiple stakeholders | Captures who decided, what was decided, and context together |
+| Meeting with multiple participants | All attendees connected atomically |
+| Event affecting multiple projects | Single relationship vs. N² binary edges |
+| Complex dependency | Multiple components with shared constraint |
+
+### Creating hyperedges
+
+```
+memory_store(
+  content="Sprint 12 planning session determined Q3 priorities",
+  node_type="event",
+  hyperedge={
+    "nodes": ["node_sprint_12", "node_sarah", "node_marcus", "node_api_project"],
+    "edge_type": "planning_session"
+  }
+)
+```
+
+## When to use which
+
+### Use edges when:
+
+- The relationship is between exactly two things
+- Direction matters (A manages B, not B manages A)
+- You want simple, queryable connections
+- Relationships are independent of each other
+
+### Use hyperedges when:
+
+- Three or more things are connected in one context
+- The relationship only makes sense with all participants
+- You want to avoid creating N² binary edges
+- The context is atomic (all-or-nothing)
+
+## Example: Modeling a decision
+
+**Scenario:** Sarah and Marcus decided to use PostgreSQL for the new API during Q3 planning.
+
+### Binary edges approach
+
+```
+Sarah ──participated_in──► Decision
+Marcus ──participated_in──► Decision
+Decision ──concerns──► PostgreSQL
+Decision ──concerns──► New API
+Decision ──occurred_during──► Q3 Planning
+```
+
+5 edges. To understand the full decision, your agent traverses all of them.
+
+### Hyperedge approach
+
+```
+[Sarah, Marcus, PostgreSQL, New API, Q3 Planning]
+                    ↑
+            decision_context
+           "Chose PostgreSQL for new API"
+```
+
+1 hyperedge. The full context is retrieved atomically.
+
+## Querying relationships
+
+### Find relationships for a node
+
+```
+memory_get_relationships(
+  node_id="node_sarah",
+  direction="both"
+)
+```
+
+Returns both edges and hyperedges involving Sarah.
+
+### Find related nodes
+
+```
+memory_find_related(
+  node_id="node_sarah",
+  depth=2,
+  edge_type="decision_context"
+)
+```
+
+Traverses up to 2 hops, filtering by relationship type.
+
+## Best practices
+
+<Tip>
+**Start simple.** Use binary edges for straightforward relationships. Only create hyperedges when you recognize that multiple concepts genuinely belong together.
+</Tip>
+
+<Warning>
+**Avoid over-connecting.** Not everything needs to be related. Focus on meaningful relationships that help your agent reason about knowledge.
+</Warning>
+
+<Info>
+**Type consistently.** Use a consistent vocabulary for edge types across your graph: `manages`, `depends_on`, `participates_in` — not `management`, `dependency`, `participant`.
+</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Memory Graphs" icon="diagram-project" href="/concepts/memory-graphs">
+    Organize knowledge into separate graphs
+  </Card>
+  <Card title="memory_find_related API" icon="code" href="/api-reference/memory-find-related">
+    Query relationships programmatically
+  </Card>
+</CardGroup>

@@ -1,0 +1,69 @@
+---
+title: Introduction
+description: What is HyperMemory and who is it for
+---
+
+# Introduction
+
+HyperMemory is a long-term memory service for AI agents, built on hypergraph technology and exposed as an MCP server.
+
+## What makes HyperMemory different
+
+- **Not a vector database** — Memories have explicit relationships, not just embeddings
+- **Not a chat history store** — A structured knowledge graph your agent navigates
+- **Hypergraph-native** — Multi-way relationships that capture complex contexts
+
+## Who is HyperMemory for
+
+- Developers building AI agents that need to remember across sessions
+- Teams running multi-agent systems with shared knowledge needs
+- Anyone using MCP-compatible tools (Claude, OpenClaw, CrewAI, OpenAI)
+
+## Key capabilities
+
+<CardGroup cols={2}>
+  <Card title="Store memories" icon="database">
+    Save nodes with metadata and relationships
+  </Card>
+  <Card title="Recall by language" icon="message-question">
+    Query memories using natural language
+  </Card>
+  <Card title="Traverse relationships" icon="diagram-project">
+    Navigate multi-way connections (hyperedges)
+  </Card>
+  <Card title="Share knowledge" icon="share-nodes">
+    Export/import subgraphs between agents
+  </Card>
+</CardGroup>
+
+## How it works
+
+HyperMemory runs as a remote MCP server at `api.hypermemory.io`. Your agent connects over HTTP/SSE, authenticates with an API key, and gets access to memory tools.
+
+Memories are stored as nodes in a hypergraph. Relationships between memories are stored as edges and hyperedges. Your agent reads and writes to this graph using natural MCP tool calls.
+
+```
+Your Agent  ─────►  HyperMemory MCP Server  ─────►  Hypergraph Database
+             │                                            │
+             │  memory_store()                            │  Nodes
+             │  memory_recall()                           │  Edges
+             │  memory_find_related()                     │  Hyperedges
+             │                                            │
+```
+
+## Available memory tools
+
+| Tool | Description |
+|------|-------------|
+| `memory_store` | Store a new memory node |
+| `memory_recall` | Query memories by natural language |
+| `memory_find_related` | Find nodes related to a given node |
+| `memory_get_relationships` | Get all edges/hyperedges for a node |
+| `memory_update` | Update an existing node |
+| `memory_forget` | Delete a node |
+| `memory_export_subgraph` | Export a portion of the graph |
+| `memory_load_link` | Import a subgraph |
+
+<Card title="Ready to start?" icon="rocket" href="/quickstart">
+  Get your agent connected in 5 minutes
+</Card>

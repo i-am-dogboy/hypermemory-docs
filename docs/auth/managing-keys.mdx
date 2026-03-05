@@ -1,0 +1,238 @@
+---
+title: Managing Keys
+description: View, rotate, and revoke API keys
+---
+
+# Managing Keys
+
+This guide covers viewing, rotating, and revoking your HyperMemory API keys.
+
+## Viewing active keys
+
+### In the dashboard
+
+1. Go to [app.hypermemory.io](https://app.hypermemory.io)
+2. Navigate to **Settings** → **API Keys**
+3. View your active keys:
+
+| Column | Description |
+|--------|-------------|
+| Name | The label you gave the key |
+| Prefix | First 8 characters (e.g., `hm_live_`) |
+| Scopes | Permissions assigned to the key |
+| Created | When the key was created |
+| Last Used | Most recent API call with this key |
+
+<Note>
+For security, full keys are never displayed after creation. You only see the prefix.
+</Note>
+
+### Via API
+
+```python
+import httpx
+
+response = httpx.get(
+    "https://api.hypermemory.io/v1/api-keys",
+    headers={"Authorization": f"Bearer {admin_api_key}"}
+)
+
+for key in response.json()["keys"]:
+    print(f"{key['name']}: {key['prefix']}... (scopes: {key['scopes']})")
+```
+
+## Revoking a key
+
+Revoking permanently disables a key. Use this when:
+
+- A key may have been compromised
+- An employee leaves
+- A project is decommissioned
+
+### In the dashboard
+
+1. Navigate to **Settings** → **API Keys**
+2. Find the key to revoke
+3. Click the **⋮** menu → **Revoke**
+4. Confirm the action
+
+<Warning>
+Revocation is immediate and permanent. Any application using this key will stop working instantly.
+</Warning>
+
+### Via API
+
+```python
+import httpx
+
+response = httpx.delete(
+    f"https://api.hypermemory.io/v1/api-keys/{key_id}",
+    headers={"Authorization": f"Bearer {admin_api_key}"}
+)
+
+if response.status_code == 200:
+    print("Key revoked successfully")
+```
+
+## Rotating keys
+
+Key rotation means replacing an old key with a new one without service interruption.
+
+### Why rotate?
+
+- **Regular security hygiene** — Limits impact of potential compromise
+- **After personnel changes** — When team members leave
+- **After potential exposure** — If a key might have been leaked
+
+### Rotation process
+
+<Steps>
+  <Step title="Create new key">
+    Generate a new key with the same scopes as the old one.
+  </Step>
+  
+  <Step title="Update applications">
+    Update all applications to use the new key:
+    - Configuration files
+    - Environment variables
+    - Secrets management systems
+  </Step>
+  
+  <Step title="Verify functionality">
+    Test that all applications work with the new key:
+    - Run health checks
+    - Verify memory operations
+    - Check logs for errors
+  </Step>
+  
+  <Step title="Revoke old key">
+    Once everything works, revoke the old key.
+  </Step>
+</Steps>
+
+### Zero-downtime rotation
+
+For critical systems, use this pattern:
+
+```python
+import os
+from datetime import datetime, timedelta
+
+class KeyRotator:
+    def __init__(self):
+        self.primary_key = os.environ.get("HYPERMEMORY_API_KEY")
+        self.backup_key = os.environ.get("HYPERMEMORY_API_KEY_BACKUP")
+    
+    def get_key(self):
+        """Return primary key, fall back to backup if needed"""
+        return self.primary_key or self.backup_key
+    
+    def rotate(self, new_key: str):
+        """Rotate to a new primary key"""
+        self.backup_key = self.primary_key
+        self.primary_key = new_key
+        
+        # Update environment
+        os.environ["HYPERMEMORY_API_KEY_BACKUP"] = self.backup_key
+        os.environ["HYPERMEMORY_API_KEY"] = self.primary_key
+```
+
+## Key naming conventions
+
+Use descriptive names to identify keys easily:
+
+| Pattern | Example | Use Case |
+|---------|---------|----------|
+| `{env}-{service}` | `prod-api-server` | Service identification |
+| `{team}-{purpose}` | `backend-ci-testing` | Team/purpose identification |
+| `{date}-{name}` | `2026-03-agent-v2` | Time-based tracking |
+
+## Monitoring key usage
+
+### Usage dashboard
+
+The API Keys page shows:
+
+- **Requests today** — Total API calls per key
+- **Last used** — Most recent activity timestamp
+- **Error rate** — Percentage of failed requests
+
+### Alerts
+
+Set up alerts for unusual activity:
+
+1. Navigate to **Settings** → **Alerts**
+2. Create a new alert:
+   - **Condition**: "API key usage > X requests/minute"
+   - **Action**: Email notification
+
+### Audit logs
+
+View detailed key activity:
+
+1. Navigate to **Settings** → **Audit Log**
+2. Filter by API key
+3. Review activity:
+   - Successful requests
+   - Failed authentication attempts
+   - Key creation/revocation events
+
+## Key limits per plan
+
+| Plan | Max Keys | Notes |
+|------|----------|-------|
+| Free | 1 | Single key for testing |
+| Developer | 5 | Enough for dev/staging/prod + backups |
+| Pro | 20 | Multi-team support |
+| Enterprise | Unlimited | Custom limits available |
+
+### What counts toward limits
+
+- Active keys count toward your limit
+- Revoked keys don't count
+- Creating a key immediately counts
+
+### Upgrading for more keys
+
+If you need more keys:
+
+1. Navigate to **Settings** → **Billing**
+2. Click **Upgrade Plan**
+3. Select a plan with higher key limits
+
+## Emergency key revocation
+
+If you suspect a key has been compromised:
+
+<Steps>
+  <Step title="Revoke immediately">
+    Don't wait — revoke the potentially compromised key now.
+  </Step>
+  
+  <Step title="Create replacement">
+    Generate a new key with the same scopes.
+  </Step>
+  
+  <Step title="Update applications">
+    Deploy the new key to all affected systems.
+  </Step>
+  
+  <Step title="Audit activity">
+    Review the audit log for unauthorized access during the exposure window.
+  </Step>
+  
+  <Step title="Investigate source">
+    Determine how the key was exposed to prevent recurrence.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Scopes & Permissions" icon="lock" href="/auth/scopes-and-permissions">
+    Configure key permissions
+  </Card>
+  <Card title="Billing Plans" icon="credit-card" href="/billing/plans">
+    Upgrade for more keys
+  </Card>
+</CardGroup>

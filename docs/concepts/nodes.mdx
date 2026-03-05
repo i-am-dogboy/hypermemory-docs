@@ -1,0 +1,168 @@
+---
+title: Nodes
+description: Understanding memory nodes and how to work with them
+---
+
+# Nodes
+
+A node is the fundamental unit of memory in HyperMemory — a single piece of knowledge your agent can store, retrieve, and connect.
+
+## What is a node?
+
+A node represents one memory: a fact, person, concept, decision, preference, or any other piece of information.
+
+Every node has:
+
+- **Content** — The text description of the memory
+- **Type** — A category label you define
+- **Metadata** — Optional key-value pairs for structured data
+- **Timestamps** — When it was created and last updated
+- **Relationships** — Connections to other nodes
+
+## Node structure
+
+```json
+{
+  "id": "node_abc123",
+  "content": "Sarah Chen prefers async communication via Slack",
+  "node_type": "preference",
+  "metadata": {
+    "person": "Sarah Chen",
+    "channel": "Slack",
+    "confidence": "high"
+  },
+  "created_at": "2026-02-15T10:30:00Z",
+  "updated_at": "2026-02-28T14:22:00Z",
+  "relationships": ["node_def456", "node_ghi789"]
+}
+```
+
+## Node types
+
+HyperMemory doesn't enforce a fixed schema for node types — you define your own based on your use case.
+
+### Common node types
+
+| Type | Example Content |
+|------|-----------------|
+| `person` | "Sarah Chen, Backend Tech Lead" |
+| `project` | "Project Alpha: API modernization initiative" |
+| `decision` | "We chose PostgreSQL over MongoDB for the new service" |
+| `preference` | "Team prefers morning standups at 9 AM" |
+| `fact` | "Our API handles 10,000 requests per minute" |
+| `event` | "Quarterly planning meeting on March 15" |
+| `document` | "Summary of Q3 roadmap document" |
+| `concept` | "Microservices architecture pattern" |
+
+### Why types matter
+
+Types help your agent:
+
+- **Filter results** — "Show me only decisions from Q3"
+- **Reason about categories** — "Who are all the people involved?"
+- **Apply different logic** — Handle facts vs opinions differently
+
+<Tip>
+Keep your type vocabulary consistent. Use `person` everywhere, not `person`, `user`, `team_member`, and `individual`.
+</Tip>
+
+## Creating nodes
+
+Use `memory_store` to create a new node:
+
+```
+memory_store(
+  content="The frontend team uses React 18 with TypeScript",
+  node_type="fact",
+  metadata={
+    "team": "frontend",
+    "technology": "React",
+    "version": "18"
+  }
+)
+```
+
+**Response:**
+```json
+{
+  "id": "node_xyz789",
+  "status": "created",
+  "created_at": "2026-03-03T14:22:00Z"
+}
+```
+
+<Info>
+Creating nodes doesn't count against your query limit. Only reads (recall, find_related) consume queries.
+</Info>
+
+## Updating nodes
+
+Nodes are mutable. Use `memory_update` to modify content or metadata:
+
+```
+memory_update(
+  node_id="node_xyz789",
+  content="The frontend team uses React 19 with TypeScript",
+  metadata={
+    "version": "19",
+    "updated_reason": "Migrated to React 19 in February"
+  }
+)
+```
+
+Updates are versioned — you can query what a node looked like at a specific point in time using temporal queries.
+
+## Deleting nodes
+
+Use `memory_forget` to delete a node:
+
+```
+memory_forget(
+  node_id="node_xyz789",
+  cascade=false
+)
+```
+
+The `cascade` option controls whether connected edges are also deleted:
+
+| cascade | Behavior |
+|---------|----------|
+| `false` (default) | Delete node only; orphan its edges |
+| `true` | Delete node and all connected edges |
+
+<Warning>
+Deletions are permanent. Consider using metadata like `status: "archived"` for soft deletes if you might need the information later.
+</Warning>
+
+## Best practices
+
+### Write clear, complete content
+
+❌ **Bad:** `"Meeting notes"`
+
+✅ **Good:** `"Q3 planning meeting notes: Decided to prioritize API performance over new features. Sarah will lead the initiative."`
+
+### Use consistent metadata keys
+
+❌ **Bad:** `{"person": "Sarah"}`, `{"who": "Marcus"}`, `{"team_member": "Alex"}`
+
+✅ **Good:** `{"person": "Sarah"}`, `{"person": "Marcus"}`, `{"person": "Alex"}`
+
+### Include context in content
+
+Nodes should be understandable without requiring traversal of relationships:
+
+❌ **Bad:** `"She prefers Slack"`
+
+✅ **Good:** `"Sarah Chen prefers async communication via Slack"`
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Edges & Hyperedges" icon="diagram-project" href="/concepts/edges-and-hyperedges">
+    Connect nodes with relationships
+  </Card>
+  <Card title="memory_store API" icon="code" href="/api-reference/memory-store">
+    Full API reference for creating nodes
+  </Card>
+</CardGroup>

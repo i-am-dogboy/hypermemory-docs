@@ -1,0 +1,199 @@
+---
+title: Scopes & Permissions
+description: Understanding API key scopes and what each allows
+---
+
+# Scopes & Permissions
+
+Scopes define what operations an API key can perform. Using the right scopes improves security by limiting potential damage from compromised keys.
+
+## Available scopes
+
+| Scope | Description |
+|-------|-------------|
+| `memory:read` | Query and retrieve memories |
+| `memory:write` | Create, update, and delete memories |
+| `memory:admin` | Graph management, export/import operations |
+
+## Scope details
+
+### memory:read
+
+Allows reading data from your memory graphs.
+
+**Permitted operations:**
+
+| Tool | Description |
+|------|-------------|
+| `memory_recall` | Query memories by natural language |
+| `memory_find_related` | Find related nodes |
+| `memory_get_relationships` | Get edges for a node |
+
+**Example use cases:**
+- Read-only dashboards
+- Reporting tools
+- Search interfaces
+
+### memory:write
+
+Allows modifying data in your memory graphs. Includes all `memory:read` permissions.
+
+**Permitted operations:**
+
+| Tool | Description |
+|------|-------------|
+| All `memory:read` operations | — |
+| `memory_store` | Create new nodes |
+| `memory_update` | Modify existing nodes |
+| `memory_forget` | Delete nodes |
+
+**Example use cases:**
+- AI agents that store and recall
+- Applications that maintain user state
+- Integration pipelines
+
+### memory:admin
+
+Allows administrative operations. Includes all `memory:read` and `memory:write` permissions.
+
+**Permitted operations:**
+
+| Tool | Description |
+|------|-------------|
+| All `memory:read` operations | — |
+| All `memory:write` operations | — |
+| `memory_export_subgraph` | Export graph portions |
+| `memory_load_link` | Import subgraphs |
+| `memory_create_graph` | Create new graphs |
+| `memory_delete_graph` | Delete graphs |
+| `memory_list_graphs` | List available graphs |
+
+**Example use cases:**
+- Migration tools
+- Backup systems
+- Multi-tenant administration
+
+## Assigning scopes
+
+### When creating a key
+
+1. Navigate to **Settings** → **API Keys**
+2. Click **Create New Key**
+3. Select the scopes you need
+4. Click **Create**
+
+### Modifying existing keys
+
+<Warning>
+You cannot add scopes to an existing key. Create a new key with the desired scopes and revoke the old one.
+</Warning>
+
+## Scope combinations
+
+### Recommended configurations
+
+| Use Case | Scopes |
+|----------|--------|
+| Read-only agent | `memory:read` |
+| Full agent | `memory:read`, `memory:write` |
+| Development/testing | `memory:read`, `memory:write` |
+| Admin tools | `memory:read`, `memory:write`, `memory:admin` |
+| Backup service | `memory:read`, `memory:admin` |
+
+### Least privilege principle
+
+Always grant the minimum scopes necessary:
+
+```
+✅ Agent that only recalls → memory:read
+✅ Agent that stores and recalls → memory:read + memory:write
+❌ Agent that only recalls → memory:read + memory:write + memory:admin
+```
+
+## Permission errors
+
+When a key lacks required scope, you get a 403 Forbidden error:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "API key lacks required scope: memory:write",
+    "required_scope": "memory:write",
+    "key_scopes": ["memory:read"]
+  }
+}
+```
+
+### Troubleshooting
+
+1. Check the error message for the required scope
+2. Verify your key's scopes in the dashboard
+3. Create a new key with the needed scope if necessary
+
+## Scope matrix
+
+Complete mapping of tools to required scopes:
+
+| Tool | memory:read | memory:write | memory:admin |
+|------|:-----------:|:------------:|:------------:|
+| `memory_recall` | ✅ | ✅ | ✅ |
+| `memory_find_related` | ✅ | ✅ | ✅ |
+| `memory_get_relationships` | ✅ | ✅ | ✅ |
+| `memory_store` | — | ✅ | ✅ |
+| `memory_update` | — | ✅ | ✅ |
+| `memory_forget` | — | ✅ | ✅ |
+| `memory_export_subgraph` | — | — | ✅ |
+| `memory_load_link` | — | — | ✅ |
+| `memory_create_graph` | — | — | ✅ |
+| `memory_delete_graph` | — | — | ✅ |
+| `memory_list_graphs` | — | — | ✅ |
+
+## Best practices
+
+<Tip>
+**Create separate keys for different purposes.** A production agent and a backup system should use different keys with different scopes.
+</Tip>
+
+<Info>
+**Review scopes periodically.** As your application evolves, some keys may have more permissions than needed.
+</Info>
+
+<Warning>
+**Never use admin-scoped keys in client-side code.** Admin keys should only be used in secure, server-side environments.
+</Warning>
+
+## Security implications
+
+### If a read-only key is compromised
+
+- Attacker can read all memories in your graph
+- Cannot modify or delete data
+- **Impact:** Data exposure
+- **Response:** Revoke key, audit what was accessed
+
+### If a write key is compromised
+
+- Attacker can read all memories
+- Can create, modify, and delete nodes
+- **Impact:** Data exposure + data tampering
+- **Response:** Revoke key, audit changes, restore from backup if needed
+
+### If an admin key is compromised
+
+- Full access to all operations
+- Can export entire graph
+- Can delete graphs
+- **Impact:** Full data breach potential
+- **Response:** Emergency revocation, full audit, consider data reset
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/auth/api-keys">
+    Create and use API keys
+  </Card>
+  <Card title="Managing Keys" icon="rotate" href="/auth/managing-keys">
+    Rotate and revoke keys
+  </Card>
+</CardGroup>

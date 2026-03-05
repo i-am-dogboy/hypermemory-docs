@@ -1,0 +1,117 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "HyperMemory",
+  "theme": "mint",
+  "colors": {
+    "primary": "#2072E6",
+    "light": "#4793EF",
+    "dark": "#1A5BB8"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Docs",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["index", "quickstart"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/hypergraph",
+              "concepts/nodes",
+              "concepts/edges-and-hyperedges",
+              "concepts/memory-graphs",
+              "concepts/temporal-memory"
+            ]
+          },
+          {
+            "group": "MCP Server",
+            "pages": [
+              "mcp-server/overview",
+              "mcp-server/connection",
+              "mcp-server/transport"
+            ]
+          },
+          {
+            "group": "Integration Guides",
+            "pages": [
+              "guides/claude",
+              "guides/openclaw",
+              "guides/crewai",
+              "guides/openai-agents",
+              "guides/custom-mcp"
+            ]
+          },
+          {
+            "group": "Authentication",
+            "pages": [
+              "auth/api-keys",
+              "auth/managing-keys",
+              "auth/scopes-and-permissions"
+            ]
+          },
+          {
+            "group": "Usage & Billing",
+            "pages": [
+              "billing/plans",
+              "billing/usage-tracking",
+              "billing/overages",
+              "billing/managing-subscription"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API Reference",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/memory-store",
+              "api-reference/memory-recall",
+              "api-reference/memory-find-related",
+              "api-reference/memory-get-relationships",
+              "api-reference/memory-update",
+              "api-reference/memory-forget",
+              "api-reference/memory-export-subgraph",
+              "api-reference/memory-load-link"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "hypermemory.io",
+          "href": "https://hypermemory.io",
+          "icon": "globe"
+        },
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/hypermemory",
+          "icon": "github"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://discord.gg/hypermemory",
+          "icon": "discord"
+        }
+      ]
+    }
+  },
+  "topbar": {
+    "cta": {
+      "text": "Get Started",
+      "href": "https://app.hypermemory.io/signup?plan=free"
+    }
+  }
+}

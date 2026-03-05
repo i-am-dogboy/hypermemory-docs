@@ -1,0 +1,174 @@
+---
+title: memory_get_relationships
+description: Get all edges and hyperedges connected to a node
+---
+
+# memory_get_relationships
+
+Get all edges and hyperedges connected to a specific node. Unlike `memory_find_related`, this returns the relationship metadata itself, not just the connected nodes.
+
+## Parameters
+
+<ParamField body="node_id" type="string" required>
+  The ID of the node to get relationships for.
+</ParamField>
+
+<ParamField body="direction" type="string">
+  Filter by edge direction. Options: `"incoming"`, `"outgoing"`, `"both"`. Default: `"both"`.
+</ParamField>
+
+<ParamField body="edge_type" type="string">
+  Filter to only edges/hyperedges of this type.
+</ParamField>
+
+<ParamField body="graph_id" type="string">
+  Target graph. Defaults to your account's default graph.
+</ParamField>
+
+## Example request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "memory_get_relationships",
+    "arguments": {
+      "node_id": "node_sarah_abc123",
+      "direction": "both"
+    }
+  }
+}
+```
+
+## Example response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "node": {
+      "id": "node_sarah_abc123",
+      "content": "Sarah Chen, Backend Tech Lead"
+    },
+    "edges": [
+      {
+        "id": "edge_xyz789",
+        "edge_type": "manages",
+        "directed": true,
+        "source": "node_sarah_abc123",
+        "target": "node_phoenix_def456",
+        "metadata": {
+          "since": "2026-01",
+          "role": "tech_lead"
+        },
+        "created_at": "2026-01-15T10:00:00Z"
+      },
+      {
+        "id": "edge_uvw456",
+        "edge_type": "reports_to",
+        "directed": true,
+        "source": "node_sarah_abc123",
+        "target": "node_cto_mno123",
+        "metadata": {},
+        "created_at": "2026-01-10T09:00:00Z"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "hedge_qrs101",
+        "edge_type": "decision_context",
+        "content": "Q3 roadmap planning decision",
+        "nodes": [
+          "node_sarah_abc123",
+          "node_marcus_ghi789",
+          "node_api_v2_jkl012",
+          "node_q3_planning_pqr345"
+        ],
+        "metadata": {
+          "date": "2026-02-01",
+          "outcome": "approved"
+        },
+        "created_at": "2026-02-01T15:00:00Z"
+      }
+    ],
+    "total_edges": 2,
+    "total_hyperedges": 1
+  }
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `node` | object | The queried node's summary |
+| `edges` | array | Binary edges connected to the node |
+| `edges[].id` | string | Edge identifier |
+| `edges[].edge_type` | string | Type/label of the edge |
+| `edges[].directed` | boolean | Whether edge has direction |
+| `edges[].source` | string | Source node ID (for directed edges) |
+| `edges[].target` | string | Target node ID (for directed edges) |
+| `edges[].metadata` | object | Edge metadata |
+| `edges[].created_at` | string | Edge creation timestamp |
+| `hyperedges` | array | Hyperedges containing the node |
+| `hyperedges[].id` | string | Hyperedge identifier |
+| `hyperedges[].edge_type` | string | Type/label of the hyperedge |
+| `hyperedges[].content` | string | Optional description of the hyperedge |
+| `hyperedges[].nodes` | array | All node IDs in the hyperedge |
+| `hyperedges[].metadata` | object | Hyperedge metadata |
+| `total_edges` | number | Count of binary edges |
+| `total_hyperedges` | number | Count of hyperedges |
+
+## Errors
+
+| Code | Description |
+|------|-------------|
+| `INVALID_PARAMETER` | Missing `node_id` or invalid direction |
+| `NODE_NOT_FOUND` | Node doesn't exist |
+| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
+| `QUOTA_EXCEEDED` | Monthly query limit reached |
+
+## Notes
+
+<Info>
+**Query cost** — Each `memory_get_relationships` call counts as 1 query.
+</Info>
+
+### Direction filtering
+
+For directed edges:
+
+- **incoming** — Edges where this node is the target
+- **outgoing** — Edges where this node is the source
+- **both** — All edges
+
+Hyperedges don't have direction, so they're always included regardless of direction filter.
+
+### Use cases
+
+**Get all context for a node:**
+```json
+{"node_id": "node_xyz", "direction": "both"}
+```
+
+**Find what a person manages:**
+```json
+{"node_id": "node_sarah", "direction": "outgoing", "edge_type": "manages"}
+```
+
+**Find who manages a project:**
+```json
+{"node_id": "node_project", "direction": "incoming", "edge_type": "manages"}
+```
+
+### Difference from memory_find_related
+
+| Tool | Returns | Best for |
+|------|---------|----------|
+| `memory_find_related` | Connected nodes | "What's related to X?" |
+| `memory_get_relationships` | Edge/hyperedge metadata | "How is X connected?" |
+
+Use `memory_find_related` to discover connected knowledge. Use `memory_get_relationships` to understand the nature of connections.

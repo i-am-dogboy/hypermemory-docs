@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+.mintlify/
+
+# Environment
+.env
+.env.local
+
+# OS files
+.DS_Store
+
+# Editor
+.idea/
+
+# Logs
+*.log

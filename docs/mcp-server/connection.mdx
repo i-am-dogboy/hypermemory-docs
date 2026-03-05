@@ -1,0 +1,247 @@
+---
+title: Connection Guide
+description: How to connect your agent to HyperMemory
+---
+
+# Connection Guide
+
+This guide covers how to establish a connection between your AI agent and HyperMemory's MCP server.
+
+## Connection details
+
+| Property | Value |
+|----------|-------|
+| Server URL | `https://api.hypermemory.io/mcp` |
+| Protocol | MCP over HTTP/SSE (Streamable HTTP) |
+| Authentication | Bearer token (API key) |
+
+## Configuration by platform
+
+<Tabs>
+  <Tab title="Claude Desktop">
+    Add to your `claude_desktop_config.json`:
+    
+    **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+    **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+    
+    ```json
+    {
+      "mcpServers": {
+        "hypermemory": {
+          "type": "url",
+          "url": "https://api.hypermemory.io/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_API_KEY"
+          }
+        }
+      }
+    }
+    ```
+    
+    Restart Claude Desktop after saving.
+  </Tab>
+  
+  <Tab title="OpenClaw">
+    Add to your OpenClaw configuration:
+    
+    ```json
+    {
+      "mcpServers": {
+        "hypermemory": {
+          "type": "url",
+          "url": "https://api.hypermemory.io/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_API_KEY"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Python (MCP Client)">
+    ```python
+    from mcp import Client
+    import os
+    
+    client = Client(
+        server_url="https://api.hypermemory.io/mcp",
+        headers={
+            "Authorization": f"Bearer {os.environ['HYPERMEMORY_API_KEY']}"
+        }
+    )
+    
+    # List available tools
+    tools = await client.list_tools()
+    print(tools)
+    
+    # Call a tool
+    result = await client.call_tool(
+        "memory_store",
+        {"content": "Test memory", "node_type": "test"}
+    )
+    ```
+  </Tab>
+  
+  <Tab title="Node.js (MCP Client)">
+    ```javascript
+    import { Client } from '@modelcontextprotocol/sdk';
+    
+    const client = new Client({
+      serverUrl: 'https://api.hypermemory.io/mcp',
+      headers: {
+        'Authorization': `Bearer ${process.env.HYPERMEMORY_API_KEY}`
+      }
+    });
+    
+    // List available tools
+    const tools = await client.listTools();
+    console.log(tools);
+    
+    // Call a tool
+    const result = await client.callTool('memory_store', {
+      content: 'Test memory',
+      node_type: 'test'
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Verifying the connection
+
+### Test with a simple store/recall
+
+1. **Store a test memory:**
+   
+   Ask your agent: "Remember that the test connection was successful"
+   
+   Expected: Agent calls `memory_store` and confirms
+
+2. **Recall the memory:**
+   
+   Ask your agent: "What do you remember about the test connection?"
+   
+   Expected: Agent calls `memory_recall` and returns the stored memory
+
+### Check tool availability
+
+If your agent doesn't use memory tools, verify they're listed:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    tools = await client.list_tools()
+    memory_tools = [t for t in tools if t.name.startswith('memory_')]
+    print(f"Found {len(memory_tools)} memory tools")
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```javascript
+    const tools = await client.listTools();
+    const memoryTools = tools.filter(t => t.name.startsWith('memory_'));
+    console.log(`Found ${memoryTools.length} memory tools`);
+    ```
+  </Tab>
+</Tabs>
+
+Expected: 8 memory tools
+
+## Troubleshooting
+
+### 401 Unauthorized
+
+**Cause:** Invalid or missing API key
+
+**Fix:**
+1. Verify your API key is correct (check for typos, extra spaces)
+2. Ensure the key hasn't been revoked
+3. Check the Authorization header format: `Bearer YOUR_KEY` (note the space)
+
+```
+❌ "BearerYOUR_KEY"      # Missing space
+❌ "bearer YOUR_KEY"     # Lowercase
+❌ "YOUR_KEY"            # Missing "Bearer"
+✅ "Bearer YOUR_KEY"     # Correct
+```
+
+### 403 Forbidden
+
+**Cause:** API key doesn't have required scope
+
+**Fix:**
+1. Check your key's scopes in the dashboard
+2. Ensure the key has `memory:read` and `memory:write` scopes
+3. Create a new key with the necessary permissions
+
+### 429 Rate Limited
+
+**Cause:** Too many requests in a short period
+
+**Fix:**
+1. Implement exponential backoff
+2. Reduce request frequency
+3. Upgrade to a higher plan for increased limits
+
+### Connection timeout
+
+**Cause:** Network issues or firewall blocking
+
+**Fix:**
+1. Verify you can reach `api.hypermemory.io` from your network
+2. Check if a proxy is required
+3. Ensure port 443 (HTTPS) is open
+
+### Tools not appearing
+
+**Cause:** MCP handshake didn't complete
+
+**Fix:**
+1. Restart your agent/client
+2. Verify the server URL is exactly `https://api.hypermemory.io/mcp`
+3. Check for error messages in your agent's logs
+
+## Environment variables
+
+We recommend storing your API key in an environment variable:
+
+<Tabs>
+  <Tab title="macOS/Linux">
+    ```bash
+    export HYPERMEMORY_API_KEY="your_api_key_here"
+    ```
+    
+    Add to `~/.bashrc` or `~/.zshrc` for persistence.
+  </Tab>
+  <Tab title="Windows">
+    ```powershell
+    $env:HYPERMEMORY_API_KEY = "your_api_key_here"
+    ```
+    
+    Or set via System Properties → Environment Variables for persistence.
+  </Tab>
+</Tabs>
+
+Then reference in your configuration:
+
+```json
+{
+  "headers": {
+    "Authorization": "Bearer ${HYPERMEMORY_API_KEY}"
+  }
+}
+```
+
+<Warning>
+Never commit API keys to version control. Use environment variables or secrets management.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Transport Details" icon="network-wired" href="/mcp-server/transport">
+    Advanced transport configuration
+  </Card>
+  <Card title="Claude Integration" icon="message-bot" href="/guides/claude">
+    Detailed Claude setup guide
+  </Card>
+</CardGroup>

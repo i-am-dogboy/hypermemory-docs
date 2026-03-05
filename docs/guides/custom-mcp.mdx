@@ -1,0 +1,438 @@
+---
+title: Custom MCP Client
+description: Build your own MCP client for HyperMemory
+---
+
+# Custom MCP Client
+
+This guide covers building a custom MCP client to integrate HyperMemory with any application.
+
+## Prerequisites
+
+- Understanding of HTTP and JSON-RPC
+- A HyperMemory API key
+- Programming language of your choice
+
+## MCP Protocol Basics
+
+HyperMemory implements the Model Context Protocol over HTTP. All interactions follow this pattern:
+
+1. **Request** — JSON-RPC 2.0 formatted request via POST
+2. **Response** — JSON-RPC 2.0 formatted response
+
+### Request format
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "memory_store",
+    "arguments": {
+      "content": "Example memory",
+      "node_type": "fact"
+    }
+  }
+}
+```
+
+### Response format
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "node_abc123",
+    "status": "created"
+  }
+}
+```
+
+## Implementation
+
+### Python client
+
+```python
+import httpx
+import json
+from typing import Any, Dict, Optional
+
+class HyperMemoryMCP:
+    """Custom MCP client for HyperMemory"""
+    
+    def __init__(self, api_key: str, base_url: str = "https://api.hypermemory.io/mcp"):
+        self.base_url = base_url
+        self.api_key = api_key
+        self._request_id = 0
+    
+    def _next_id(self) -> int:
+        self._request_id += 1
+        return self._request_id
+    
+    def _request(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Make a JSON-RPC request"""
+        payload = {
+            "jsonrpc": "2.0",
+            "id": self._next_id(),
+            "method": method,
+            "params": params
+        }
+        
+        response = httpx.post(
+            self.base_url,
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            },
+            timeout=30.0
+        )
+        
+        response.raise_for_status()
+        result = response.json()
+        
+        if "error" in result:
+            raise MCPError(
+                result["error"].get("code", "UNKNOWN"),
+                result["error"].get("message", "Unknown error")
+            )
+        
+        return result.get("result", {})
+    
+    def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Call an MCP tool"""
+        return self._request("tools/call", {"name": name, "arguments": arguments})
+    
+    def list_tools(self) -> list:
+        """List available tools"""
+        return self._request("tools/list", {})
+    
+    # Convenience methods
+    def store(self, content: str, node_type: str = "fact", 
+              metadata: Optional[Dict] = None, relationships: Optional[list] = None):
+        args = {"content": content, "node_type": node_type}
+        if metadata:
+            args["metadata"] = metadata
+        if relationships:
+            args["relationships"] = relationships
+        return self.call_tool("memory_store", args)
+    
+    def recall(self, query: str, max_results: int = 10, 
+               node_type: Optional[str] = None, time_range: Optional[Dict] = None):
+        args = {"query": query, "max_results": max_results}
+        if node_type:
+            args["node_type"] = node_type
+        if time_range:
+            args["time_range"] = time_range
+        return self.call_tool("memory_recall", args)
+    
+    def find_related(self, node_id: str, depth: int = 1, 
+                     edge_type: Optional[str] = None):
+        args = {"node_id": node_id, "depth": depth}
+        if edge_type:
+            args["edge_type"] = edge_type
+        return self.call_tool("memory_find_related", args)
+
+class MCPError(Exception):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        self.message = message
+        super().__init__(f"{code}: {message}")
+```
+
+### Node.js client
+
+```javascript
+// hypermemory-mcp.js
+const axios = require('axios');
+
+class HyperMemoryMCP {
+  constructor(apiKey, baseUrl = 'https://api.hypermemory.io/mcp') {
+    this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+    this.requestId = 0;
+  }
+
+  async _request(method, params) {
+    this.requestId++;
+    
+    const response = await axios.post(this.baseUrl, {
+      jsonrpc: '2.0',
+      id: this.requestId,
+      method,
+      params
+    }, {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
+
+    if (response.data.error) {
+      throw new MCPError(
+        response.data.error.code || 'UNKNOWN',
+        response.data.error.message || 'Unknown error'
+      );
+    }
+
+    return response.data.result || {};
+  }
+
+  async callTool(name, args) {
+    return this._request('tools/call', { name, arguments: args });
+  }
+
+  async listTools() {
+    return this._request('tools/list', {});
+  }
+
+  // Convenience methods
+  async store(content, nodeType = 'fact', metadata = null, relationships = null) {
+    const args = { content, node_type: nodeType };
+    if (metadata) args.metadata = metadata;
+    if (relationships) args.relationships = relationships;
+    return this.callTool('memory_store', args);
+  }
+
+  async recall(query, maxResults = 10, nodeType = null, timeRange = null) {
+    const args = { query, max_results: maxResults };
+    if (nodeType) args.node_type = nodeType;
+    if (timeRange) args.time_range = timeRange;
+    return this.callTool('memory_recall', args);
+  }
+
+  async findRelated(nodeId, depth = 1, edgeType = null) {
+    const args = { node_id: nodeId, depth };
+    if (edgeType) args.edge_type = edgeType;
+    return this.callTool('memory_find_related', args);
+  }
+}
+
+class MCPError extends Error {
+  constructor(code, message) {
+    super(`${code}: ${message}`);
+    this.code = code;
+  }
+}
+
+module.exports = { HyperMemoryMCP, MCPError };
+```
+
+### Go client
+
+```go
+package hypermemory
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "sync/atomic"
+    "time"
+)
+
+type Client struct {
+    baseURL   string
+    apiKey    string
+    requestID int64
+    client    *http.Client
+}
+
+type Request struct {
+    JSONRPC string      `json:"jsonrpc"`
+    ID      int64       `json:"id"`
+    Method  string      `json:"method"`
+    Params  interface{} `json:"params"`
+}
+
+type Response struct {
+    JSONRPC string          `json:"jsonrpc"`
+    ID      int64           `json:"id"`
+    Result  json.RawMessage `json:"result,omitempty"`
+    Error   *RPCError       `json:"error,omitempty"`
+}
+
+type RPCError struct {
+    Code    string `json:"code"`
+    Message string `json:"message"`
+}
+
+func NewClient(apiKey string) *Client {
+    return &Client{
+        baseURL: "https://api.hypermemory.io/mcp",
+        apiKey:  apiKey,
+        client: &http.Client{
+            Timeout: 30 * time.Second,
+        },
+    }
+}
+
+func (c *Client) CallTool(name string, args map[string]interface{}) (json.RawMessage, error) {
+    id := atomic.AddInt64(&c.requestID, 1)
+    
+    req := Request{
+        JSONRPC: "2.0",
+        ID:      id,
+        Method:  "tools/call",
+        Params: map[string]interface{}{
+            "name":      name,
+            "arguments": args,
+        },
+    }
+    
+    body, _ := json.Marshal(req)
+    
+    httpReq, _ := http.NewRequest("POST", c.baseURL, bytes.NewReader(body))
+    httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+    httpReq.Header.Set("Content-Type", "application/json")
+    
+    resp, err := c.client.Do(httpReq)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+    
+    var rpcResp Response
+    json.NewDecoder(resp.Body).Decode(&rpcResp)
+    
+    if rpcResp.Error != nil {
+        return nil, fmt.Errorf("%s: %s", rpcResp.Error.Code, rpcResp.Error.Message)
+    }
+    
+    return rpcResp.Result, nil
+}
+
+func (c *Client) Store(content, nodeType string, metadata map[string]interface{}) (json.RawMessage, error) {
+    args := map[string]interface{}{
+        "content":   content,
+        "node_type": nodeType,
+    }
+    if metadata != nil {
+        args["metadata"] = metadata
+    }
+    return c.CallTool("memory_store", args)
+}
+
+func (c *Client) Recall(query string, maxResults int) (json.RawMessage, error) {
+    return c.CallTool("memory_recall", map[string]interface{}{
+        "query":       query,
+        "max_results": maxResults,
+    })
+}
+```
+
+## Usage examples
+
+### Python
+
+```python
+client = HyperMemoryMCP(api_key="your_api_key")
+
+# Store a memory
+result = client.store(
+    content="Project Phoenix deadline is March 31st",
+    node_type="project",
+    metadata={"project": "Phoenix", "date": "2026-03-31"}
+)
+print(f"Stored: {result['id']}")
+
+# Recall memories
+memories = client.recall("Phoenix project deadline")
+for m in memories['results']:
+    print(f"- {m['content']}")
+```
+
+### Node.js
+
+```javascript
+const { HyperMemoryMCP } = require('./hypermemory-mcp');
+
+const client = new HyperMemoryMCP('your_api_key');
+
+async function main() {
+  // Store
+  const stored = await client.store(
+    'Project Phoenix deadline is March 31st',
+    'project',
+    { project: 'Phoenix', date: '2026-03-31' }
+  );
+  console.log('Stored:', stored.id);
+
+  // Recall
+  const memories = await client.recall('Phoenix project deadline');
+  memories.results.forEach(m => console.log('-', m.content));
+}
+
+main();
+```
+
+## Error handling best practices
+
+```python
+from enum import Enum
+
+class ErrorCode(Enum):
+    INVALID_PARAMETER = "INVALID_PARAMETER"
+    NODE_NOT_FOUND = "NODE_NOT_FOUND"
+    UNAUTHORIZED = "UNAUTHORIZED"
+    RATE_LIMITED = "RATE_LIMITED"
+    QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+
+def handle_mcp_error(error: MCPError):
+    if error.code == ErrorCode.RATE_LIMITED.value:
+        # Implement exponential backoff
+        return retry_with_backoff()
+    elif error.code == ErrorCode.UNAUTHORIZED.value:
+        # Re-authenticate or alert user
+        return refresh_credentials()
+    elif error.code == ErrorCode.QUOTA_EXCEEDED.value:
+        # Alert user about quota
+        return notify_quota_exceeded()
+    else:
+        # Log and raise
+        logger.error(f"MCP Error: {error.code} - {error.message}")
+        raise error
+```
+
+## Testing your client
+
+```python
+import unittest
+
+class TestHyperMemoryMCP(unittest.TestCase):
+    def setUp(self):
+        self.client = HyperMemoryMCP(api_key="test_key")
+    
+    def test_store_and_recall(self):
+        # Store
+        store_result = self.client.store(
+            content="Test memory",
+            node_type="test"
+        )
+        self.assertIn("id", store_result)
+        
+        # Recall
+        recall_result = self.client.recall("Test memory")
+        self.assertTrue(len(recall_result["results"]) > 0)
+    
+    def test_error_handling(self):
+        with self.assertRaises(MCPError) as context:
+            self.client.find_related("nonexistent_node_id")
+        
+        self.assertEqual(context.exception.code, "NODE_NOT_FOUND")
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full tool documentation
+  </Card>
+  <Card title="Transport Details" icon="network-wired" href="/mcp-server/transport">
+    Advanced transport options
+  </Card>
+</CardGroup>

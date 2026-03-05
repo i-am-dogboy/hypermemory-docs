@@ -1,0 +1,279 @@
+---
+title: Transport
+description: HTTP/SSE transport details for advanced users
+---
+
+# Transport
+
+HyperMemory uses Streamable HTTP as its MCP transport — HTTP for requests and Server-Sent Events (SSE) for streaming responses.
+
+## Streamable HTTP
+
+The primary transport for remote MCP connections:
+
+| Aspect | Detail |
+|--------|--------|
+| Request method | POST |
+| Content type | `application/json` |
+| Response type | `application/json` or `text/event-stream` |
+| Endpoint | `https://api.hypermemory.io/mcp` |
+
+### Request format
+
+```http
+POST /mcp HTTP/1.1
+Host: api.hypermemory.io
+Content-Type: application/json
+Authorization: Bearer YOUR_API_KEY
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "memory_store",
+    "arguments": {
+      "content": "Test memory",
+      "node_type": "test"
+    }
+  }
+}
+```
+
+### Response format
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "node_abc123",
+    "status": "created",
+    "created_at": "2026-03-03T10:30:00Z"
+  }
+}
+```
+
+## Server-Sent Events (SSE)
+
+For streaming responses (e.g., large query results), HyperMemory uses SSE:
+
+### Requesting streaming
+
+Add `Accept: text/event-stream` header:
+
+```http
+POST /mcp HTTP/1.1
+Host: api.hypermemory.io
+Content-Type: application/json
+Accept: text/event-stream
+Authorization: Bearer YOUR_API_KEY
+```
+
+### SSE response format
+
+```
+event: message
+data: {"jsonrpc":"2.0","id":1,"result":{"partial":true,"data":[...]}}
+
+event: message  
+data: {"jsonrpc":"2.0","id":1,"result":{"partial":true,"data":[...]}}
+
+event: message
+data: {"jsonrpc":"2.0","id":1,"result":{"complete":true}}
+```
+
+## Session management
+
+HyperMemory supports optional session management via the `Mcp-Session-Id` header:
+
+### Creating a session
+
+First request without session ID creates a new session:
+
+```http
+POST /mcp HTTP/1.1
+Authorization: Bearer YOUR_API_KEY
+```
+
+Response includes session ID:
+
+```http
+HTTP/1.1 200 OK
+Mcp-Session-Id: sess_xyz789
+```
+
+### Reusing a session
+
+Include the session ID in subsequent requests:
+
+```http
+POST /mcp HTTP/1.1
+Authorization: Bearer YOUR_API_KEY
+Mcp-Session-Id: sess_xyz789
+```
+
+### Session benefits
+
+- **Connection pooling** — Reduced latency for repeated requests
+- **Context caching** — Server can optimize for repeated patterns
+- **Rate limit tracking** — Per-session rate limits
+
+<Note>
+Sessions are optional. HyperMemory works fine without them, but they can improve performance for high-frequency use cases.
+</Note>
+
+## CORS configuration
+
+For browser-based clients, HyperMemory supports CORS:
+
+| Header | Value |
+|--------|-------|
+| `Access-Control-Allow-Origin` | `*` |
+| `Access-Control-Allow-Methods` | `POST, OPTIONS` |
+| `Access-Control-Allow-Headers` | `Content-Type, Authorization, Mcp-Session-Id` |
+
+### Preflight requests
+
+Browser clients send OPTIONS preflight requests:
+
+```http
+OPTIONS /mcp HTTP/1.1
+Host: api.hypermemory.io
+Origin: https://your-app.com
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Authorization, Content-Type
+```
+
+HyperMemory responds with appropriate CORS headers.
+
+## Timeouts and reconnection
+
+### Recommended timeouts
+
+| Operation | Timeout |
+|-----------|---------|
+| Connection | 10 seconds |
+| Request | 30 seconds |
+| SSE stream | 5 minutes |
+
+### Reconnection strategy
+
+For SSE connections, implement exponential backoff:
+
+```python
+import time
+
+def connect_with_backoff(max_retries=5):
+    base_delay = 1  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            return establish_connection()
+        except ConnectionError:
+            delay = base_delay * (2 ** attempt)
+            time.sleep(delay)
+    
+    raise MaxRetriesExceeded()
+```
+
+### Heartbeats
+
+SSE connections receive periodic heartbeats:
+
+```
+event: heartbeat
+data: {"timestamp":"2026-03-03T10:30:00Z"}
+```
+
+If no heartbeat is received for 60 seconds, reconnect.
+
+## Authentication details
+
+HyperMemory uses Bearer token authentication (OAuth 2.0 style):
+
+```http
+Authorization: Bearer hm_live_abc123xyz...
+```
+
+### Token format
+
+| Prefix | Environment |
+|--------|-------------|
+| `hm_live_` | Production |
+| `hm_test_` | Testing/sandbox |
+
+### Token security
+
+<Warning>
+- Never include API keys in URLs
+- Never log Authorization headers
+- Use HTTPS only (HTTP requests are rejected)
+- Rotate keys periodically
+</Warning>
+
+## Rate limiting
+
+HyperMemory enforces rate limits per API key:
+
+| Plan | Requests/minute |
+|------|-----------------|
+| Free | 60 |
+| Developer | 300 |
+| Pro | 1000 |
+| Enterprise | Custom |
+
+### Rate limit headers
+
+Responses include rate limit information:
+
+```http
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 297
+X-RateLimit-Reset: 1709469600
+```
+
+### Handling 429 responses
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many requests",
+    "retry_after": 30
+  }
+}
+```
+
+Wait `retry_after` seconds before retrying.
+
+## Compression
+
+HyperMemory supports gzip compression:
+
+### Request compression
+
+```http
+POST /mcp HTTP/1.1
+Content-Encoding: gzip
+```
+
+### Response compression
+
+```http
+Accept-Encoding: gzip
+```
+
+Response will be gzip-compressed if smaller than raw.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full tool documentation
+  </Card>
+  <Card title="Integration Guides" icon="plug" href="/guides/claude">
+    Platform-specific setup
+  </Card>
+</CardGroup>

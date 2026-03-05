@@ -1,0 +1,107 @@
+---
+title: Hypergraph
+description: Understanding hypergraphs and why they matter for AI memory
+---
+
+# Hypergraph
+
+HyperMemory stores your agent's knowledge in a hypergraph — a data structure that captures relationships more naturally than traditional graphs.
+
+## Graphs you already know
+
+You're probably familiar with regular graphs: nodes connected by edges.
+
+```
+Alice ────manages────► Project Alpha
+  │                         │
+  │                    ─────┘
+  └───collaborates───► Bob
+```
+
+Each edge connects exactly two nodes. This works well for simple relationships, but real-world knowledge is messier.
+
+## What makes a hypergraph different
+
+In a hypergraph, a single edge — called a **hyperedge** — can connect three or more nodes simultaneously.
+
+```
+┌─────────────────────────────────────────────┐
+│              Sprint Planning                │
+│                (hyperedge)                  │
+│                                             │
+│    Alice ─── Project Alpha ─── Sprint 12   │
+│       │           │              │          │
+│       └───────────┴──────────────┘          │
+└─────────────────────────────────────────────┘
+```
+
+This single hyperedge captures that Alice, Project Alpha, and Sprint 12 are all connected through the concept of "Sprint Planning" — without needing to create six separate binary edges.
+
+## Why this matters for AI memory
+
+Real-world knowledge rarely fits into neat pairs:
+
+- **Decisions** involve multiple people, options, and outcomes
+- **Events** connect participants, locations, times, and topics  
+- **Projects** span teams, milestones, dependencies, and stakeholders
+
+With binary edges, your agent has to reconstruct complex contexts by traversing many connections. With hyperedges, the context is already captured in one relationship.
+
+### Example: Remembering a decision
+
+**Binary graph approach:**
+```
+Decision ──involves──► Sarah
+Decision ──involves──► Marcus
+Decision ──concerns──► API v2
+Decision ──occurred_at──► Q3 Planning
+Decision ──outcome──► Approved
+```
+
+5 edges. Your agent has to traverse all of them to understand the full context.
+
+**Hypergraph approach:**
+```
+[Sarah, Marcus, API v2, Q3 Planning, Approved]
+          ↑
+    decision_context
+```
+
+1 hyperedge. The full context is captured atomically.
+
+## HyperMemory's hypergraph features
+
+| Feature | Description |
+|---------|-------------|
+| **Nodes** | Individual memories (facts, people, concepts, decisions) |
+| **Edges** | Binary relationships between two nodes |
+| **Hyperedges** | Multi-way relationships connecting 3+ nodes |
+| **Typed relationships** | All edges and hyperedges have labels/types |
+| **Metadata** | Attach key-value data to nodes and edges |
+| **Temporal awareness** | Every element has timestamps; query by time range |
+
+## When to use edges vs hyperedges
+
+| Use Case | Recommendation |
+|----------|---------------|
+| Simple relationship (A manages B) | Edge |
+| Category membership (A is-a type) | Edge |
+| Sequential connection (A then B) | Edge |
+| Complex context (meeting with 5 participants) | Hyperedge |
+| Decision involving multiple factors | Hyperedge |
+| Event with multiple participants/outcomes | Hyperedge |
+
+<Note>
+You don't always need to decide upfront. Start with simple edges, and create hyperedges when you recognize patterns that involve multiple connected concepts.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Nodes" icon="circle" href="/concepts/nodes">
+    Learn about the building blocks of memory
+  </Card>
+  <Card title="Edges & Hyperedges" icon="diagram-project" href="/concepts/edges-and-hyperedges">
+    Deep dive into relationships
+  </Card>
+</CardGroup>

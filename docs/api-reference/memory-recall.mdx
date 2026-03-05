@@ -1,0 +1,173 @@
+---
+title: memory_recall
+description: Query memories using natural language
+---
+
+# memory_recall
+
+Query memories using natural language. Returns nodes whose content matches the query semantically.
+
+## Parameters
+
+<ParamField body="query" type="string" required>
+  Natural language query to search memories. Can be a question or keywords.
+</ParamField>
+
+<ParamField body="max_results" type="number">
+  Maximum number of results to return. Default: 10. Maximum: 100.
+</ParamField>
+
+<ParamField body="node_type" type="string">
+  Filter results to only nodes of this type.
+</ParamField>
+
+<ParamField body="graph_id" type="string">
+  Target graph to search. Defaults to your account's default graph.
+</ParamField>
+
+<ParamField body="time_range" type="object">
+  Filter by creation or update time.
+  
+  - `start` (string): ISO 8601 timestamp — include nodes created/updated after this time
+  - `end` (string): ISO 8601 timestamp — include nodes created/updated before this time
+</ParamField>
+
+<ParamField body="metadata_filter" type="object">
+  Filter by metadata key-value pairs. All specified pairs must match.
+</ParamField>
+
+## Example request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "memory_recall",
+    "arguments": {
+      "query": "What are the Q3 priorities?",
+      "max_results": 5,
+      "node_type": "decision",
+      "time_range": {
+        "start": "2026-01-01T00:00:00Z"
+      }
+    }
+  }
+}
+```
+
+## Example response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "results": [
+      {
+        "id": "node_abc123",
+        "content": "Q3 priority is improving API response times to under 100ms",
+        "node_type": "decision",
+        "metadata": {
+          "quarter": "Q3-2026",
+          "team": "backend"
+        },
+        "relevance": 0.95,
+        "created_at": "2026-02-15T10:30:00Z",
+        "updated_at": "2026-02-15T10:30:00Z"
+      },
+      {
+        "id": "node_def456",
+        "content": "Secondary Q3 priority is reducing infrastructure costs by 20%",
+        "node_type": "decision",
+        "metadata": {
+          "quarter": "Q3-2026",
+          "team": "platform"
+        },
+        "relevance": 0.87,
+        "created_at": "2026-02-15T11:00:00Z",
+        "updated_at": "2026-02-15T11:00:00Z"
+      }
+    ],
+    "total": 2,
+    "query_id": "qry_xyz789"
+  }
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `results` | array | Array of matching nodes |
+| `results[].id` | string | Node identifier |
+| `results[].content` | string | Node content |
+| `results[].node_type` | string | Node type |
+| `results[].metadata` | object | Node metadata |
+| `results[].relevance` | number | Relevance score (0-1) |
+| `results[].created_at` | string | Creation timestamp |
+| `results[].updated_at` | string | Last update timestamp |
+| `total` | number | Total matching nodes (may exceed `max_results`) |
+| `query_id` | string | Unique identifier for this query (for debugging) |
+
+## Errors
+
+| Code | Description |
+|------|-------------|
+| `INVALID_PARAMETER` | Missing `query` or invalid parameter |
+| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
+| `QUOTA_EXCEEDED` | Monthly query limit reached |
+| `RATE_LIMITED` | Too many requests |
+
+## Notes
+
+<Info>
+**Query cost** — Each `memory_recall` call counts as 1 query against your plan limit.
+</Info>
+
+<Tip>
+**Be specific** — "What is Sarah's communication preference?" returns better results than "Sarah" or "preferences".
+</Tip>
+
+### Relevance scoring
+
+Results are ranked by semantic similarity to your query:
+
+- **0.9 - 1.0** — Very high relevance
+- **0.7 - 0.9** — High relevance
+- **0.5 - 0.7** — Moderate relevance
+- **Below 0.5** — Low relevance (usually filtered out)
+
+### Combining filters
+
+Filters are combined with AND logic:
+
+```json
+{
+  "query": "project status",
+  "node_type": "project",
+  "metadata_filter": {"team": "backend"},
+  "time_range": {"start": "2026-01-01T00:00:00Z"}
+}
+```
+
+This returns nodes that:
+- Match "project status" semantically
+- AND have type "project"
+- AND have metadata.team = "backend"
+- AND were created after Jan 1, 2026
+
+### Empty results
+
+If no nodes match, `results` is an empty array:
+
+```json
+{
+  "results": [],
+  "total": 0,
+  "query_id": "qry_abc123"
+}
+```
+
+This still counts as 1 query.

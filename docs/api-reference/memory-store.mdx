@@ -1,0 +1,124 @@
+---
+title: memory_store
+description: Store a new memory node in the knowledge graph
+---
+
+# memory_store
+
+Store a new memory node in the knowledge graph.
+
+## Parameters
+
+<ParamField body="content" type="string" required>
+  The memory content to store. Should be a clear, complete statement that can be understood without context.
+</ParamField>
+
+<ParamField body="node_type" type="string">
+  Category of the memory node. You define your own types — common examples: `person`, `project`, `decision`, `fact`, `preference`, `event`.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Additional key-value pairs for structured data. Keys should be strings; values can be strings, numbers, booleans, or arrays.
+</ParamField>
+
+<ParamField body="relationships" type="array">
+  Array of existing node IDs to create edges to. Creates undirected edges from the new node to each specified node.
+</ParamField>
+
+<ParamField body="graph_id" type="string">
+  Target graph for the node. Defaults to your account's default graph.
+</ParamField>
+
+## Example request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "memory_store",
+    "arguments": {
+      "content": "Sarah Chen is the tech lead for Project Phoenix",
+      "node_type": "assignment",
+      "metadata": {
+        "person": "Sarah Chen",
+        "project": "Phoenix",
+        "role": "tech_lead",
+        "start_date": "2026-01"
+      },
+      "relationships": ["node_sarah_abc123", "node_phoenix_def456"]
+    }
+  }
+}
+```
+
+## Example response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "node_xyz789",
+    "status": "created",
+    "created_at": "2026-03-03T14:30:00Z",
+    "edges_created": 2
+  }
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the created node |
+| `status` | string | Always `"created"` on success |
+| `created_at` | string | ISO 8601 timestamp |
+| `edges_created` | number | Count of edges created via `relationships` |
+
+## Errors
+
+| Code | Description |
+|------|-------------|
+| `INVALID_PARAMETER` | Missing `content` or invalid parameter type |
+| `NODE_NOT_FOUND` | A node ID in `relationships` doesn't exist |
+| `NODE_LIMIT_EXCEEDED` | Account has reached node limit |
+| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
+
+## Notes
+
+<Info>
+**Free operation** — Creating nodes doesn't count against your query limit.
+</Info>
+
+<Tip>
+**Write complete content** — Nodes should be understandable without relationships. Instead of "She prefers Slack", write "Sarah Chen prefers async communication via Slack".
+</Tip>
+
+<Warning>
+**Avoid duplicates** — `memory_store` always creates a new node. Check for existing memories with `memory_recall` first if you want to update instead.
+</Warning>
+
+## Hyperedges
+
+To create a hyperedge (multi-way relationship), include the `hyperedge` parameter:
+
+```json
+{
+  "arguments": {
+    "content": "Q3 planning decision",
+    "node_type": "decision",
+    "hyperedge": {
+      "nodes": ["node_sarah", "node_marcus", "node_phoenix", "node_q3"],
+      "edge_type": "decision_context"
+    }
+  }
+}
+```
+
+This creates a new node AND a hyperedge connecting it with all specified nodes.
+
+## Idempotency
+
+`memory_store` is not idempotent — calling it twice with identical arguments creates two separate nodes. If you need idempotent behavior, implement client-side deduplication using content hashing.

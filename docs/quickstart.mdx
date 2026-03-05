@@ -1,0 +1,180 @@
+---
+title: Quickstart
+description: Get HyperMemory working in 5 minutes
+---
+
+# Quickstart
+
+Get your AI agent connected to HyperMemory in 5 minutes.
+
+## Prerequisites
+
+- A HyperMemory account ([sign up free](https://app.hypermemory.io/signup))
+- An API key
+- An MCP-compatible agent (Claude, OpenClaw, CrewAI, etc.)
+
+## Step 1: Get your API key
+
+1. Sign up at [app.hypermemory.io](https://app.hypermemory.io/signup)
+2. Go to **Settings → API Keys**
+3. Click **Create New Key**
+4. Copy your key
+
+<Warning>
+Keep your API key secret. Never commit it to version control or share it publicly.
+</Warning>
+
+## Step 2: Connect your agent
+
+Add HyperMemory to your agent's MCP configuration:
+
+<Tabs>
+  <Tab title="Claude">
+    Add to your `claude_desktop_config.json`:
+    ```json
+    {
+      "mcpServers": {
+        "hypermemory": {
+          "type": "url",
+          "url": "https://api.hypermemory.io/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_API_KEY"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="OpenClaw">
+    Add to your OpenClaw MCP configuration:
+    ```json
+    {
+      "mcpServers": {
+        "hypermemory": {
+          "type": "url",
+          "url": "https://api.hypermemory.io/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_API_KEY"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from mcp import Client
+
+    client = Client(
+        server_url="https://api.hypermemory.io/mcp",
+        headers={"Authorization": "Bearer YOUR_API_KEY"}
+    )
+    ```
+  </Tab>
+</Tabs>
+
+## Step 3: Store your first memory
+
+Once connected, your agent can use memory tools:
+
+```
+memory_store(
+  content="Our Q3 priority is improving API response times",
+  node_type="decision",
+  metadata={"quarter": "Q3-2026", "team": "backend"}
+)
+```
+
+**Response:**
+```json
+{
+  "id": "node_abc123",
+  "status": "created",
+  "created_at": "2026-03-03T10:30:00Z"
+}
+```
+
+## Step 4: Recall a memory
+
+```
+memory_recall(
+  query="What are our Q3 priorities?",
+  max_results=5
+)
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "id": "node_abc123",
+      "content": "Our Q3 priority is improving API response times",
+      "node_type": "decision",
+      "relevance": 0.95
+    }
+  ]
+}
+```
+
+## Step 5: Create a relationship
+
+```
+memory_store(
+  content="Sarah Chen is leading the API performance initiative",
+  node_type="assignment",
+  relationships=["node_abc123"]
+)
+```
+
+This creates a new node and automatically links it to the Q3 priority decision.
+
+## Step 6: Find related memories
+
+```
+memory_find_related(
+  node_id="node_abc123",
+  depth=2
+)
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "id": "node_def456",
+      "content": "Sarah Chen is leading the API performance initiative",
+      "node_type": "assignment",
+      "distance": 1
+    }
+  ]
+}
+```
+
+## Verify everything works
+
+Ask your agent: "What do you remember about Q3 priorities?"
+
+If configured correctly, your agent will use `memory_recall` to retrieve the stored memory and respond with the information.
+
+<Info>
+If your agent doesn't use memory tools, make sure the MCP server is listed in its available tools and that the API key is valid.
+</Info>
+
+## What's next?
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="/concepts/hypergraph">
+    Understand hypergraphs, nodes, and edges
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full documentation for all memory tools
+  </Card>
+  <Card title="Integration Guides" icon="plug" href="/guides/claude">
+    Detailed setup for your specific platform
+  </Card>
+  <Card title="Pricing" icon="credit-card" href="/billing/plans">
+    Plans, limits, and billing
+  </Card>
+</CardGroup>

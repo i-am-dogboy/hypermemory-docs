@@ -1,0 +1,214 @@
+---
+title: memory_load_link
+description: Import a subgraph into your knowledge graph
+---
+
+# memory_load_link
+
+Import an exported subgraph into your knowledge graph. Use to restore backups, share knowledge between agents, or migrate data.
+
+## Parameters
+
+<ParamField body="data" type="object" required>
+  The exported subgraph JSON (from `memory_export_subgraph`).
+</ParamField>
+
+<ParamField body="graph_id" type="string">
+  Target graph for import. Defaults to your account's default graph.
+</ParamField>
+
+<ParamField body="merge_strategy" type="string">
+  How to handle imported data. Options:
+  - `"append"` (default): Create new nodes with new IDs
+  - `"replace"`: Replace existing nodes if IDs match (use with caution)
+</ParamField>
+
+<ParamField body="id_prefix" type="string">
+  Prefix to add to all imported node IDs. Useful for namespacing imported data.
+</ParamField>
+
+## Example request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "memory_load_link",
+    "arguments": {
+      "data": {
+        "nodes": [
+          {
+            "id": "node_abc123",
+            "content": "Sarah Chen, Backend Tech Lead",
+            "node_type": "person",
+            "metadata": {"team": "backend"}
+          }
+        ],
+        "edges": [
+          {
+            "edge_type": "manages",
+            "source": "node_abc123",
+            "target": "node_def456"
+          }
+        ],
+        "hyperedges": []
+      },
+      "graph_id": "production",
+      "merge_strategy": "append",
+      "id_prefix": "imported_"
+    }
+  }
+}
+```
+
+## Example response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "import_id": "imp_xyz789",
+    "imported_at": "2026-03-15T14:30:00Z",
+    "target_graph": "production",
+    "id_mapping": {
+      "node_abc123": "imported_node_abc123",
+      "node_def456": "imported_node_def456"
+    },
+    "stats": {
+      "nodes_created": 2,
+      "nodes_updated": 0,
+      "nodes_skipped": 0,
+      "edges_created": 1,
+      "hyperedges_created": 0
+    },
+    "warnings": []
+  }
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `import_id` | string | Unique identifier for this import |
+| `imported_at` | string | Import timestamp |
+| `target_graph` | string | Graph data was imported to |
+| `id_mapping` | object | Maps original IDs to new IDs |
+| `stats.nodes_created` | number | New nodes created |
+| `stats.nodes_updated` | number | Existing nodes updated (replace mode) |
+| `stats.nodes_skipped` | number | Nodes skipped due to errors |
+| `stats.edges_created` | number | Edges created |
+| `stats.hyperedges_created` | number | Hyperedges created |
+| `warnings` | array | Non-fatal issues encountered |
+
+## Errors
+
+| Code | Description |
+|------|-------------|
+| `INVALID_PARAMETER` | Missing `data` or invalid structure |
+| `INVALID_EXPORT_FORMAT` | Data doesn't match export schema |
+| `NODE_LIMIT_EXCEEDED` | Import would exceed node limit |
+| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
+
+## Notes
+
+<Info>
+**Free operation** — Imports don't count against your query limit.
+</Info>
+
+<Info>
+**Requires admin scope** — This operation requires `memory:admin` scope.
+</Info>
+
+### Merge strategies
+
+**append (default)**
+- All nodes get new IDs
+- Safe — never overwrites existing data
+- Use for: Sharing knowledge, adding new data
+
+**replace**
+- Nodes with matching IDs are updated
+- Nodes without matches are created
+- Use for: Restoring backups, syncing data
+
+<Warning>
+**Replace mode warning** — `replace` can overwrite existing nodes. Only use when you're sure you want to overwrite.
+</Warning>
+
+### ID mapping
+
+Imported nodes receive new IDs. Use the `id_mapping` response to track:
+
+```python
+response = client.call_tool("memory_load_link", {"data": export_data})
+
+# Find the new ID for an imported node
+old_id = "node_abc123"
+new_id = response["id_mapping"][old_id]
+```
+
+### Edge handling
+
+Edges reference node IDs. During import:
+
+1. Source and target IDs are mapped to new IDs
+2. If both nodes exist (imported or pre-existing), the edge is created
+3. If either node is missing, the edge is skipped (warning added)
+
+### Import validation
+
+Before importing, the data is validated:
+
+- JSON structure matches export schema
+- All edge endpoints reference valid node IDs
+- Hyperedges have at least 3 nodes
+
+Invalid items are skipped with warnings.
+
+### Use cases
+
+**Restore from backup:**
+```json
+{
+  "data": backup_data,
+  "merge_strategy": "replace"
+}
+```
+
+**Share knowledge between agents:**
+```json
+{
+  "data": agent_a_export,
+  "graph_id": "agent_b_graph",
+  "id_prefix": "from_agent_a_"
+}
+```
+
+**Migrate to new graph:**
+```json
+{
+  "data": old_graph_export,
+  "graph_id": "new_graph",
+  "merge_strategy": "append"
+}
+```
+
+### Large imports
+
+For large imports (>1000 nodes):
+
+1. Consider batching into multiple smaller imports
+2. Monitor node limits before importing
+3. Use `id_prefix` to namespace batches
+
+```python
+for batch in chunks(nodes, size=500):
+    client.call_tool("memory_load_link", {
+        "data": {"nodes": batch, "edges": [], "hyperedges": []},
+        "id_prefix": f"batch_{batch_num}_"
+    })
+```
