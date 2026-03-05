@@ -34,14 +34,21 @@
 }
 
 .mdx-content pre {
-  background-color: #fff !important;
+  background-color: #f8f9fa !important;
   color: rgb(31, 35, 40) !important;
 }
 
 .mdx-content pre:not(.shiki) {
-  border: 1px solid rgba(2, 8, 23, 0.1);
+  border: 1px solid rgba(2, 8, 23, 0.08);
   border-radius: 1rem;
   padding: 0.875rem 1rem;
   font-size: 0.875rem;
   line-height: 1.5rem;
+}
+
+.mdx-content code:not(pre code) {
+  background-color: #f1f3f5;
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
 }

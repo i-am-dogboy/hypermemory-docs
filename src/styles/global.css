@@ -39,6 +39,27 @@
   --sidebar-bg: #EBF3FE;
 }
 
+/* Search bar in header - medium blue background */
+header button.rounded-xl {
+  background-color: #4793EF !important;
+  border-color: #4793EF !important;
+}
+
+header button.rounded-xl:hover {
+  background-color: #5ba0f2 !important;
+  border-color: #5ba0f2 !important;
+}
+
+header button.rounded-xl span,
+header button.rounded-xl svg {
+  color: white !important;
+}
+
+header button.rounded-xl kbd {
+  background-color: rgba(255,255,255,0.2) !important;
+  color: white !important;
+}
+
 @theme {
   --animate-dot-bounce: dot-bounce 1.4s ease-in-out infinite;
 

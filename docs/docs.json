@@ -99,11 +99,6 @@
           "anchor": "GitHub",
           "href": "https://github.com/hypermemory",
           "icon": "github"
-        },
-        {
-          "anchor": "Discord",
-          "href": "https://discord.gg/hypermemory",
-          "icon": "discord"
         }
       ]
     }
