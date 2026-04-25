@@ -1,211 +1,69 @@
 ---
-title: API Keys
-description: Understanding and using HyperMemory API keys
+title: API keys
+description: Key format, creation, rotation, and storage
 ---
 
-# API Keys
+# API keys
 
-API keys authenticate your agent's requests to HyperMemory. Every request must include a valid key.
+API keys authenticate requests to the hosted HyperMemory server when you are not using OAuth.
 
-## What is an API key?
+## Key format
 
-An API key is a unique token that:
+| Property | Value |
+|---|---|
+| Prefix | `hm_` |
+| Body | 64 hexadecimal characters |
+| Example | `hm_a1b2c3d4e5f6...` (64 hex chars) |
 
-- **Identifies your account** — Links requests to your HyperMemory subscription
-- **Authorizes access** — Determines what operations you can perform
-- **Tracks usage** — Associates queries with your billing
+Keys are stored server-side as a SHA-256 hash. The full key is shown only once at creation time.
 
-API keys look like this:
-```
-hm_live_abc123xyz456def789ghi012jkl345mno678
-```
+## Key binding
 
-## Creating an API key
+Each API key is bound to a specific graph at creation time. When authenticating with an API key, the middleware detects the `hm_` prefix and resolves your tenant from the `api_keys` system table.
 
-### Step 1: Open the dashboard
+## Create a key
 
-Go to [app.hypermemory.io](https://app.hypermemory.io) and sign in.
+1. Go to **Dashboard > Settings > API Keys** at [app.hypermemory.io](https://app.hypermemory.io)
+2. Select the graph to bind the key to
+3. Choose a scope: `owner` (read + write) or `member` (read-only)
+4. Click **Create key**
+5. Copy the key — it is shown **once**
 
-### Step 2: Navigate to API Keys
+## Use a key
 
-Click **Settings** → **API Keys** in the sidebar.
-
-### Step 3: Create a new key
-
-1. Click **Create New Key**
-2. Enter a descriptive name (e.g., "Production Agent", "Development Testing")
-3. Select the scopes you need (see [Scopes & Permissions](/auth/scopes-and-permissions))
-4. Click **Create**
-
-### Step 4: Copy your key
-
-<Warning>
-Your key is shown only once. Copy it immediately and store it securely. You cannot retrieve it later.
-</Warning>
-
-## Using your API key
-
-Include your key in the `Authorization` header of every request:
+Pass the key as a Bearer token:
 
 ```
-Authorization: Bearer hm_live_abc123xyz...
+Authorization: Bearer hm_YOUR_KEY
 ```
 
-### Configuration examples
+Or set the environment variable:
 
-<Tabs>
-  <Tab title="Claude">
-    ```json
-    {
-      "mcpServers": {
-        "hypermemory": {
-          "type": "url",
-          "url": "https://api.hypermemory.io/mcp",
-          "headers": {
-            "Authorization": "Bearer YOUR_API_KEY"
-          }
-        }
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="Python">
-    ```python
-    import os
-    import httpx
-    
-    response = httpx.post(
-        "https://api.hypermemory.io/mcp",
-        headers={
-            "Authorization": f"Bearer {os.environ['HYPERMEMORY_API_KEY']}"
-        },
-        json=payload
-    )
-    ```
-  </Tab>
-  <Tab title="cURL">
-    ```bash
-    curl -X POST https://api.hypermemory.io/mcp \
-      -H "Authorization: Bearer $HYPERMEMORY_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",...}'
-    ```
-  </Tab>
-</Tabs>
-
-## Key prefixes
-
-API keys have prefixes that indicate their environment:
-
-| Prefix | Environment | Usage |
-|--------|-------------|-------|
-| `hm_live_` | Production | Live applications, real data |
-| `hm_test_` | Testing | Development, CI/CD, experiments |
-
-<Note>
-Test keys work with a sandbox environment that doesn't affect your production data or billing (queries still count against limits for testing purposes).
-</Note>
-
-## Security best practices
-
-### Never commit keys to version control
-
-❌ **Bad:**
-```python
-API_KEY = "hm_live_abc123..."  # Hardcoded
+```bash
+export HYPERMEMORY_API_KEY=hm_YOUR_KEY
 ```
 
-✅ **Good:**
-```python
-API_KEY = os.environ["HYPERMEMORY_API_KEY"]  # Environment variable
-```
+The `hm` CLI reads this variable automatically. See [MCP with API key](/connect/mcp-api-key) for client-specific configuration.
 
-### Use environment variables
+## Key scopes
 
-<Tabs>
-  <Tab title="macOS/Linux">
-    ```bash
-    # Add to ~/.bashrc or ~/.zshrc
-    export HYPERMEMORY_API_KEY="hm_live_abc123..."
-    ```
-  </Tab>
-  <Tab title="Windows">
-    ```powershell
-    # Add to system environment
-    [Environment]::SetEnvironmentVariable("HYPERMEMORY_API_KEY", "hm_live_abc123...", "User")
-    ```
-  </Tab>
-  <Tab title=".env file">
-    ```bash
-    # .env (add to .gitignore!)
-    HYPERMEMORY_API_KEY=hm_live_abc123...
-    ```
-  </Tab>
-</Tabs>
+| Scope | Access | Default for |
+|---|---|---|
+| `owner` | Read + write | Personal keys |
+| `member` | Read-only | Organization keys |
 
-### Use secrets management in production
+## Rotate a key
 
-For production deployments, use proper secrets management:
+1. Create a new key with the same scope and graph binding
+2. Update your clients to use the new key
+3. Revoke the old key
 
-- **AWS** — AWS Secrets Manager or Parameter Store
-- **GCP** — Secret Manager
-- **Azure** — Key Vault
-- **Kubernetes** — Secrets
-- **Docker** — Docker secrets
+## Revoke a key
 
-### Rotate keys periodically
+Revoking is immediate. The key stops working on the next request.
 
-Even if not compromised, rotate keys on a schedule:
+Navigate to **Dashboard > Settings > API Keys** and click **Revoke** next to the key.
 
-1. Create a new key
-2. Update all applications to use the new key
-3. Verify everything works
-4. Revoke the old key
+## Self-hosted
 
-### Use least-privilege scopes
-
-Only request the scopes your application needs:
-
-- Read-only agents → `memory:read` only
-- Full agents → `memory:read` + `memory:write`
-- Admin tools → add `memory:admin`
-
-See [Scopes & Permissions](/auth/scopes-and-permissions) for details.
-
-## Key limits by plan
-
-| Plan | Max Keys |
-|------|----------|
-| Free | 1 |
-| Developer | 5 |
-| Pro | 20 |
-| Enterprise | Unlimited |
-
-## Troubleshooting
-
-### 401 Unauthorized
-
-Your key is invalid or missing:
-
-1. Check for typos (extra spaces, missing characters)
-2. Verify the key hasn't been revoked
-3. Ensure format is `Bearer KEY` (with space)
-
-### 403 Forbidden
-
-Your key doesn't have the required scope:
-
-1. Check the operation's required scope in the API reference
-2. Create a new key with the needed scope
-3. Or request additional scopes for existing key
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="Managing Keys" icon="key" href="/auth/managing-keys">
-    View, rotate, and revoke keys
-  </Card>
-  <Card title="Scopes & Permissions" icon="lock" href="/auth/scopes-and-permissions">
-    Understand what each scope allows
-  </Card>
-</CardGroup>
+The open-source `src/server.py` has **no API key validation**. Keys only matter when connecting to the hosted service.

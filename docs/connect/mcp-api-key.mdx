@@ -1,0 +1,90 @@
+---
+title: MCP with API key
+description: Connect to HyperMemory using a Bearer API key
+---
+
+# MCP with API key
+
+For programmatic or server-side access where OAuth is not practical, use a Bearer API key.
+
+## Server URL
+
+```
+https://api.hypermemory.io/mcp
+```
+
+The same MCP endpoint is used for both OAuth and API key authentication. The middleware detects the `hm_` prefix on the key and resolves your tenant from the `api_keys` system table.
+
+## 1. Create a key
+
+Go to **Dashboard > Settings > API Keys** at [app.hypermemory.io](https://app.hypermemory.io) and create a new key.
+
+Keys use the format `hm_` followed by 64 hexadecimal characters. Each key is bound to a specific graph at creation time.
+
+Copy the key immediately — it is shown only once. Keys are stored server-side as a SHA-256 hash.
+
+## 2. Configure your client
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "hypermemory": {
+      "url": "https://api.hypermemory.io/mcp",
+      "headers": {
+        "Authorization": "Bearer hm_YOUR_KEY_HERE"
+      }
+    }
+  }
+}
+```
+
+### Claude Code
+
+```bash
+claude mcp add hypermemory \
+  --transport http \
+  --header "Authorization: Bearer hm_YOUR_KEY_HERE" \
+  https://api.hypermemory.io/mcp
+```
+
+### Environment variable
+
+Many clients read `HYPERMEMORY_API_KEY` from the environment:
+
+```bash
+export HYPERMEMORY_API_KEY=hm_YOUR_KEY_HERE
+```
+
+### Raw HTTP
+
+```bash
+curl -X POST https://api.hypermemory.io/mcp \
+  -H "Authorization: Bearer hm_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "hm_get_overview",
+      "arguments": {}
+    }
+  }'
+```
+
+## Key scopes
+
+| Scope | Access | Default for |
+|---|---|---|
+| `owner` | Read + write | Personal keys |
+| `member` | Read-only | Organization keys |
+
+## Key management
+
+- **Revoke** keys at **Dashboard > Settings > API Keys**
+- **Rotate** by creating a new key and revoking the old one
+- The same plan limits and rate limits apply as with OAuth
+
+See [API keys](/auth/api-keys) for details on format, scopes, and rotation.

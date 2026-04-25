@@ -22,21 +22,12 @@
             "pages": ["index", "quickstart"]
           },
           {
-            "group": "Core Concepts",
+            "group": "Connect",
             "pages": [
-              "concepts/hypergraph",
-              "concepts/nodes",
-              "concepts/edges-and-hyperedges",
-              "concepts/memory-graphs",
-              "concepts/temporal-memory"
-            ]
-          },
-          {
-            "group": "MCP Server",
-            "pages": [
-              "mcp-server/overview",
-              "mcp-server/connection",
-              "mcp-server/transport"
+              "connect/mcp-oauth",
+              "connect/mcp-api-key",
+              "connect/cli",
+              "connect/self-hosted"
             ]
           },
           {
@@ -45,25 +36,33 @@
               "guides/claude",
               "guides/openclaw",
               "guides/crewai",
+              "guides/n8n",
               "guides/openai-agents",
               "guides/custom-mcp"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/hypergraph",
+              "concepts/nodes",
+              "concepts/edges-and-hyperedges",
+              "concepts/linked-hypergraphs",
+              "concepts/temporal-memory"
             ]
           },
           {
             "group": "Authentication",
             "pages": [
               "auth/api-keys",
-              "auth/managing-keys",
               "auth/scopes-and-permissions"
             ]
           },
           {
-            "group": "Usage & Billing",
+            "group": "Billing",
             "pages": [
               "billing/plans",
-              "billing/usage-tracking",
-              "billing/overages",
-              "billing/managing-subscription"
+              "billing/usage"
             ]
           }
         ]
@@ -76,13 +75,16 @@
             "pages": [
               "api-reference/overview",
               "api-reference/memory-store",
+              "api-reference/memory-update",
               "api-reference/memory-recall",
               "api-reference/memory-find-related",
-              "api-reference/memory-get-relationships",
-              "api-reference/memory-update",
+              "api-reference/memory-get-overview",
               "api-reference/memory-forget",
+              "api-reference/memory-add-relationships",
+              "api-reference/memory-get-relationships",
               "api-reference/memory-export-subgraph",
-              "api-reference/memory-load-link"
+              "api-reference/memory-load-link",
+              "api-reference/linked-hypergraph-tools"
             ]
           }
         ]
@@ -97,7 +99,7 @@
         },
         {
           "anchor": "GitHub",
-          "href": "https://github.com/hypermemory",
+          "href": "https://github.com/RunStack-AI/hypergraph_memory",
           "icon": "github"
         }
       ]
@@ -106,7 +108,7 @@
   "topbar": {
     "cta": {
       "text": "Get Started",
-      "href": "https://app.hypermemory.io/signup?plan=free"
+      "href": "/quickstart"
     }
   }
 }

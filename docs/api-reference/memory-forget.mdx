@@ -1,144 +1,44 @@
 ---
-title: memory_forget
-description: Delete a memory node from the graph
+title: hm_forget
+description: Delete a node from the hypergraph
 ---
 
-# memory_forget
+# hm_forget
 
-Delete a memory node from the graph. Optionally cascade to delete connected edges.
+Remove a node and optionally cascade-delete all edges that reference it.
 
 ## Parameters
 
-<ParamField body="node_id" type="string" required>
-  The ID of the node to delete.
-</ParamField>
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `key` | `str` | **required** | Node key to delete |
+| `cascade` | `bool` | `True` | Also delete edges that include this node |
 
-<ParamField body="cascade" type="boolean">
-  If `true`, also delete all edges and hyperedges connected to this node. Default: `false`.
-</ParamField>
+## Response
 
-<ParamField body="graph_id" type="string">
-  Target graph. Defaults to your account's default graph.
-</ParamField>
+Confirms deletion. If `cascade` is true, reports the number of edges removed.
 
-## Example request
+## Example
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_forget",
-    "arguments": {
-      "node_id": "node_abc123",
-      "cascade": true
-    }
-  }
+  "key": "decision_old_auth",
+  "cascade": true
 }
 ```
 
-## Example response
+## CLI equivalent
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "id": "node_abc123",
-    "status": "deleted",
-    "deleted_at": "2026-03-15T14:30:00Z",
-    "edges_deleted": 3,
-    "hyperedges_affected": 1
-  }
-}
+```bash
+hm forget decision_old_auth --cascade
 ```
 
-## Response fields
+## REST endpoint
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Deleted node's ID |
-| `status` | string | Always `"deleted"` on success |
-| `deleted_at` | string | Deletion timestamp |
-| `edges_deleted` | number | Count of edges deleted (when cascade=true) |
-| `hyperedges_affected` | number | Count of hyperedges this node was removed from |
-
-## Errors
-
-| Code | Description |
-|------|-------------|
-| `INVALID_PARAMETER` | Missing `node_id` |
-| `NODE_NOT_FOUND` | Node doesn't exist |
-| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
-
-## Notes
-
-<Info>
-**Free operation** — Deletions don't count against your query limit.
-</Info>
-
-### Cascade behavior
-
-**cascade: false (default)**
-- Node is deleted
-- Connected binary edges become "orphaned" (point to non-existent node)
-- Hyperedges have this node removed from their `nodes` array
-- Orphaned edges may cause issues — use `cascade: true` for clean deletion
-
-**cascade: true**
-- Node is deleted
-- All binary edges connected to this node are deleted
-- Hyperedges have this node removed from their `nodes` array
-- If a hyperedge would have fewer than 3 nodes, it's converted to a binary edge or deleted
-
-### Hyperedge handling
-
-When a node is removed from a hyperedge:
-
-| Remaining nodes | Result |
-|-----------------|--------|
-| 3+ nodes | Hyperedge continues with reduced membership |
-| 2 nodes | Hyperedge converts to binary edge |
-| 1 node | Hyperedge is deleted |
+```
+POST /api/v1/memory/forget
+```
 
 <Warning>
-**Permanent deletion** — There is no undo. For recoverable deletion, consider adding metadata like `status: "archived"` instead.
+Deletion is permanent. The hosted service removes the node from SurrealDB, its vector from Qdrant, and cleans up related Redis state. There is no undo.
 </Warning>
-
-### Batch deletion
-
-To delete multiple nodes, call `memory_forget` for each:
-
-```python
-for node_id in nodes_to_delete:
-    client.call_tool("memory_forget", {
-        "node_id": node_id,
-        "cascade": True
-    })
-```
-
-### Soft delete pattern
-
-Instead of deleting, mark nodes as archived:
-
-```python
-# Soft delete
-client.call_tool("memory_update", {
-    "node_id": "node_abc123",
-    "metadata": {
-        "status": "archived",
-        "archived_at": "2026-03-15T14:30:00Z"
-    }
-})
-
-# Exclude archived from queries
-client.call_tool("memory_recall", {
-    "query": "project status",
-    "metadata_filter": {
-        "status": {"$ne": "archived"}
-    }
-})
-```
-
-This preserves history and relationships while hiding the node from normal queries.

@@ -1,0 +1,122 @@
+---
+title: Linked hypergraph tools
+description: Self-hosted tools for managing linked hypergraph files
+---
+
+# Linked hypergraph tools
+
+These tools are available on the **self-hosted open-source server** only. They manage the lifecycle of linked hypergraph JSON files — discovering, previewing, loading, unloading, and saving them.
+
+<Info>
+The hosted service at `api.hypermemory.io` uses a [multi-graph system](/concepts/linked-hypergraphs) instead of file-based linked hypergraphs. See [Plans](/billing/plans) for graph limits by tier.
+</Info>
+
+---
+
+## memory_export_subgraph
+
+Extract a set of nodes (and their connecting edges) into a new JSON file. Creates bidirectional links between the original graph and the exported file.
+
+**Parameters (`ExportSubgraphRequest`):**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `nodes` | `List[str]` (min 1) | **required** | Node keys to export |
+| `anchors` | `List[str]` | `[]` | Keys that remain in the original graph as link points |
+| `target_file` | `str` | **required** | Path for the new JSON file |
+| `relationships` | `List[str] \| None` | `None` | Specific edge keys to include (default: all edges between exported nodes) |
+| `overwrite` | `bool` | `False` | Overwrite if target file exists |
+| `remove_from_original` | `bool` | `True` | Remove exported nodes from the source graph |
+
+---
+
+## memory_load_link
+
+Load a linked hypergraph file into runtime memory. Nodes are namespaced to avoid key collisions.
+
+**Parameters (`LoadLinkRequest`):**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `node_key` | `str` | **required** | Key of the link node whose assets reference the file |
+| `writable` | `bool` | `False` | Allow modifications to be saved back |
+| `recursive` | `bool` | `False` | Also load links within the linked file |
+| `max_depth` | `int` | `3` | Maximum recursion depth |
+| `resolve_references` | `bool` | `True` | Collapse reference nodes into direct edges |
+
+---
+
+## memory_discover_links
+
+List all link nodes in the current graph (nodes whose `assets` reference other hypergraph JSON files).
+
+**Parameters:** None.
+
+**Response:** List of link nodes with their keys and asset URIs.
+
+---
+
+## memory_get_summary
+
+Get the summary and metadata from a hypergraph URI **without** loading it into memory.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `uri` | `str` | Hypergraph file URI to preview |
+
+**Response:** Summary string, node count, edge count from the remote file.
+
+---
+
+## memory_unload_link
+
+Remove a previously loaded linked hypergraph from runtime memory.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `node_key` | `str` | Key of the link node to unload |
+
+---
+
+## memory_load_all_links
+
+Load **all** linked hypergraphs found in the current graph into runtime memory.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `recursive` | `bool` | `True` | Also load links within linked files |
+| `max_depth` | `int` | `3` | Maximum recursion depth |
+
+<Warning>
+Loading all links can be expensive if the graph has many linked files. Use `memory_discover_links` + `memory_get_summary` to preview before bulk loading.
+</Warning>
+
+---
+
+## memory_save_source
+
+Save changes back to a specific loaded source file. Only works for sources loaded with `writable: true`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `uri` | `str` | Source URI to save |
+
+---
+
+## memory_set_file
+
+Switch the active memory JSON file at runtime. **Only registered if `ALLOW_SET_FILE` is not `"false"`** (default: registered).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `file_path` | `str` | Path to the new memory JSON file |

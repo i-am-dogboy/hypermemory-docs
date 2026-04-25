@@ -1,0 +1,103 @@
+---
+title: MCP with OAuth
+description: Connect any MCP client to HyperMemory using OAuth 2.1 authentication
+---
+
+# MCP with OAuth
+
+This is the recommended connection method. Your MCP client connects to the hosted HyperMemory server and authenticates via OAuth 2.1 Authorization Code with PKCE.
+
+## Server URL
+
+```
+https://api.hypermemory.io/mcp
+```
+
+Transport: **Streamable HTTP**.
+
+## How it works
+
+1. Your MCP client discovers the OAuth metadata via `GET /.well-known/oauth-authorization-server` (RFC 8414) and `GET /.well-known/oauth-protected-resource/mcp` (RFC 9728).
+2. Optionally, the client performs dynamic registration via `POST /register`.
+3. The client opens `GET /authorize`, which redirects to GitHub login (via Supabase).
+4. After login, `POST /oauth/complete` mints a one-time authorization code (stored in Redis with a 300-second TTL).
+5. The client exchanges the code + PKCE verifier at `POST /token` for an `access_token` and `refresh_token`.
+6. Tokens refresh automatically via `POST /token` with `grant_type=refresh_token`.
+
+PKCE uses the **S256** challenge method.
+
+## Advertised scopes
+
+| Scope | Description |
+|---|---|
+| `memory:read` | Read nodes, edges, and graph state |
+| `memory:write` | Create and update nodes and edges |
+| `memory:admin` | Full access including administrative operations |
+
+<Info>
+Enforcement is via plan limits and API key scope, not per-scope-string gating. All authenticated users have access to the tools their plan allows.
+</Info>
+
+## Client configuration
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "hypermemory": {
+      "url": "https://api.hypermemory.io/mcp"
+    }
+  }
+}
+```
+
+Claude Desktop handles the OAuth flow automatically.
+
+### Claude Code
+
+```bash
+claude mcp add hypermemory --transport http https://api.hypermemory.io/mcp
+```
+
+### Cursor
+
+Add to your MCP settings (`mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "hypermemory": {
+      "url": "https://api.hypermemory.io/mcp"
+    }
+  }
+}
+```
+
+### OpenClaw
+
+```json
+{
+  "mcpServers": {
+    "hypermemory": {
+      "url": "https://api.hypermemory.io/mcp"
+    }
+  }
+}
+```
+
+### n8n
+
+In n8n's MCP node, set **Server URL** to `https://api.hypermemory.io/mcp`. Configure credentials as OAuth2 type — n8n handles the token flow.
+
+## Tenant resolution
+
+Your tenant namespace and database are resolved from the JWT `app_metadata.tenant_ns` and `tenant_db` fields set by Supabase. Tenants are lazily provisioned on first access — no manual setup is needed.
+
+## When to use API key instead
+
+Use [MCP with API key](/connect/mcp-api-key) if:
+
+- Your client does not support OAuth (e.g. server-side scripts, CI pipelines)
+- You need a static credential for automation
+- You are integrating via raw HTTP rather than an MCP SDK

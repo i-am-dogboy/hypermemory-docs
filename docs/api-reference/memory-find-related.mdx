@@ -1,166 +1,52 @@
 ---
-title: memory_find_related
-description: Find nodes related to a given node by traversing relationships
+title: hm_find_related
+description: Traverse relationships from a starting node
 ---
 
-# memory_find_related
+# hm_find_related
 
-Find nodes related to a given node by traversing edges and hyperedges in the graph.
+Find nodes connected to a given node by traversing hyperedge relationships. Supports multiple traversal strategies for different use cases.
 
 ## Parameters
 
-<ParamField body="node_id" type="string" required>
-  The ID of the source node to find relations for.
-</ParamField>
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `key` | `str` | **required** | Starting node key |
 
-<ParamField body="depth" type="number">
-  How many relationship hops to traverse. Default: 1. Maximum: 5.
-</ParamField>
+## Traversal strategies
 
-<ParamField body="edge_type" type="string">
-  Filter to only edges of this type (e.g., "manages", "depends_on").
-</ParamField>
+The hosted service supports three traversal strategies:
 
-<ParamField body="max_results" type="number">
-  Maximum number of results to return. Default: 10. Maximum: 100.
-</ParamField>
+| Strategy | Description |
+|---|---|
+| **Chain** | Follow edges step-by-step from the starting node |
+| **Decay** | Weight connections by distance — closer nodes score higher |
+| **Type-boosted** | Prioritize specific node types in traversal |
 
-<ParamField body="graph_id" type="string">
-  Target graph. Defaults to your account's default graph.
-</ParamField>
+## Response
 
-## Example request
+Returns the subgraph reachable from the starting node — connected nodes with their relationships and metadata.
+
+## Example
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_find_related",
-    "arguments": {
-      "node_id": "node_sarah_abc123",
-      "depth": 2,
-      "max_results": 10
-    }
-  }
+  "key": "person_alice"
 }
 ```
 
-## Example response
+## CLI equivalent
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "source_node": {
-      "id": "node_sarah_abc123",
-      "content": "Sarah Chen, Backend Tech Lead"
-    },
-    "results": [
-      {
-        "id": "node_phoenix_def456",
-        "content": "Project Phoenix: API modernization initiative",
-        "node_type": "project",
-        "distance": 1,
-        "path": ["manages"]
-      },
-      {
-        "id": "node_marcus_ghi789",
-        "content": "Marcus Lee, Senior Backend Developer",
-        "node_type": "person",
-        "distance": 2,
-        "path": ["manages", "member_of"]
-      },
-      {
-        "id": "node_decision_jkl012",
-        "content": "Decision to use PostgreSQL for new service",
-        "node_type": "decision",
-        "distance": 1,
-        "path": ["participated_in"]
-      }
-    ],
-    "total": 3
-  }
-}
+```bash
+hm find person_alice --depth 2
 ```
 
-## Response fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `source_node` | object | The node you queried from |
-| `results` | array | Array of related nodes |
-| `results[].id` | string | Related node's ID |
-| `results[].content` | string | Related node's content |
-| `results[].node_type` | string | Related node's type |
-| `results[].distance` | number | Number of hops from source |
-| `results[].path` | array | Edge types traversed to reach this node |
-| `total` | number | Total related nodes found |
-
-## Errors
-
-| Code | Description |
-|------|-------------|
-| `INVALID_PARAMETER` | Missing `node_id` or invalid depth |
-| `NODE_NOT_FOUND` | Source node doesn't exist |
-| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
-| `QUOTA_EXCEEDED` | Monthly query limit reached |
-
-## Notes
-
-<Info>
-**Query cost** — Each `memory_find_related` call counts as 1 query.
-</Info>
-
-### Traversal behavior
-
-- **Depth 1** — Direct connections only
-- **Depth 2** — Direct connections + their connections
-- **Depth N** — Up to N hops away
-
-Higher depths exponentially increase the potential result set but don't increase query cost.
-
-### Including hyperedges
-
-Related nodes connected via hyperedges are included. If node A and node B are both members of the same hyperedge, they're considered directly connected (distance 1).
+## REST endpoint
 
 ```
-Node A ───┐
-          ├──── Hyperedge "Sprint Planning"
-Node B ───┘
-
-A → B distance = 1 (via hyperedge)
+POST /api/v1/memory/find-related
 ```
 
-### Path information
+## Self-hosted equivalent
 
-The `path` array shows how each result was reached:
-
-```json
-{
-  "id": "node_xyz",
-  "distance": 3,
-  "path": ["manages", "member_of", "works_on"]
-}
-```
-
-This means: source → (manages) → X → (member_of) → Y → (works_on) → node_xyz
-
-### Filtering by edge type
-
-Use `edge_type` to find specific relationships:
-
-```json
-{
-  "node_id": "node_sarah",
-  "edge_type": "manages"
-}
-```
-
-Returns only nodes Sarah manages directly.
-
-<Warning>
-**Large graphs** — With depth > 2 on highly connected nodes, results may be truncated at `max_results`. Use edge_type filters to narrow results.
-</Warning>
+The open-source server's `memory_find_related` accepts `key`, `relationship_pattern` (regex filter on edge labels), `max_depth` (1–5, default 2), and `max_nodes` (1–100, default 30).

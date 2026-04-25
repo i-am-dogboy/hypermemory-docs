@@ -1,405 +1,99 @@
 ---
-title: OpenAI Agents Integration
-description: Complete guide to integrating HyperMemory with OpenAI function calling
+title: OpenAI Agents
+description: Bridge HyperMemory MCP tools to OpenAI function calling
 ---
 
-# OpenAI Agents Integration
+# OpenAI Agents
 
-This guide covers integrating HyperMemory with OpenAI's function calling API for persistent memory.
+OpenAI's function calling API does not speak MCP natively. You bridge it by calling the HyperMemory MCP endpoint over HTTP and mapping the results back to OpenAI's tool format.
 
-## Prerequisites
-
-- OpenAI API access with function calling support
-- A HyperMemory account ([sign up](https://app.hypermemory.io/signup))
-- A HyperMemory API key
-- Python 3.8+ with `openai` and `httpx` packages
-
-## Installation
-
-```bash
-pip install openai httpx
-```
-
-## Setup
-
-### Step 1: Create HyperMemory client
+## HTTP client
 
 ```python
-# hypermemory_client.py
-import httpx
 import os
+import httpx
 
-class HyperMemoryClient:
+class HyperMemoryMCP:
     def __init__(self):
-        self.base_url = "https://api.hypermemory.io/mcp"
-        self.api_key = os.environ["HYPERMEMORY_API_KEY"]
-    
-    def _call(self, tool_name: str, arguments: dict):
-        response = httpx.post(
-            self.base_url,
+        self.url = "https://api.hypermemory.io/mcp"
+        self.key = os.environ["HYPERMEMORY_API_KEY"]
+
+    def call(self, tool: str, args: dict) -> dict:
+        r = httpx.post(
+            self.url,
             json={
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "tools/call",
-                "params": {"name": tool_name, "arguments": arguments}
+                "params": {"name": tool, "arguments": args},
             },
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            timeout=30.0
+            headers={"Authorization": f"Bearer {self.key}"},
+            timeout=30.0,
         )
-        result = response.json()
-        if "error" in result:
-            raise Exception(result["error"]["message"])
-        return result["result"]
-    
-    def memory_store(self, content: str, node_type: str = "fact", metadata: dict = None):
-        return self._call("memory_store", {
-            "content": content,
-            "node_type": node_type,
-            "metadata": metadata or {}
-        })
-    
-    def memory_recall(self, query: str, max_results: int = 5):
-        return self._call("memory_recall", {
-            "query": query,
-            "max_results": max_results
-        })
-    
-    def memory_find_related(self, node_id: str, depth: int = 2):
-        return self._call("memory_find_related", {
-            "node_id": node_id,
-            "depth": depth
-        })
+        return r.json().get("result", {})
 ```
 
-### Step 2: Define function schemas
+## Define OpenAI functions
+
+Map `hm_store` and `hm_recall` to OpenAI function schemas. See [hm_store](/api-reference/memory-store) and [hm_recall](/api-reference/memory-recall) for exact parameter shapes.
 
 ```python
-# Define tools for OpenAI function calling
-MEMORY_TOOLS = [
+TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "memory_store",
-            "description": "Store a new memory in the persistent knowledge graph",
+            "name": "hm_store",
+            "description": "Store a memory node in the knowledge graph",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": "The memory content to store"
-                    },
-                    "node_type": {
-                        "type": "string",
-                        "description": "Category of memory (person, project, decision, fact)",
-                        "enum": ["person", "project", "decision", "fact", "preference", "event"]
-                    },
-                    "metadata": {
-                        "type": "object",
-                        "description": "Additional structured data"
-                    }
+                    "key": {"type": "string", "description": "Unique node key, format: {type}_{name}"},
+                    "description": {"type": "string", "description": "What this memory represents"},
+                    "node_type": {"type": "string", "description": "Node type (person, decision, concept, etc.)"},
+                    "data": {"type": "object", "description": "Structured metadata"},
                 },
-                "required": ["content"]
-            }
-        }
+                "required": ["key", "description"],
+            },
+        },
     },
     {
         "type": "function",
         "function": {
-            "name": "memory_recall",
-            "description": "Query memories by natural language to find relevant information",
+            "name": "hm_recall",
+            "description": "Search memory using hybrid search (BM25 + vector + regex)",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Natural language query to search memories"
-                    },
-                    "max_results": {
-                        "type": "integer",
-                        "description": "Maximum number of results to return",
-                        "default": 5
-                    }
+                    "query": {"type": "string", "description": "Search query"},
                 },
-                "required": ["query"]
-            }
-        }
+                "required": ["query"],
+            },
+        },
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_find_related",
-            "description": "Find memories related to a specific memory node",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "node_id": {
-                        "type": "string",
-                        "description": "ID of the node to find related memories for"
-                    },
-                    "depth": {
-                        "type": "integer",
-                        "description": "How many relationship hops to traverse",
-                        "default": 2
-                    }
-                },
-                "required": ["node_id"]
-            }
-        }
-    }
 ]
 ```
 
-### Step 3: Create the agent
+## Dispatch tool calls
 
 ```python
-from openai import OpenAI
 import json
+from openai import OpenAI
 
 client = OpenAI()
-memory = HyperMemoryClient()
+memory = HyperMemoryMCP()
 
-def execute_tool(tool_name: str, arguments: dict):
-    """Execute a HyperMemory tool"""
-    if tool_name == "memory_store":
-        return memory.memory_store(**arguments)
-    elif tool_name == "memory_recall":
-        return memory.memory_recall(**arguments)
-    elif tool_name == "memory_find_related":
-        return memory.memory_find_related(**arguments)
-    else:
-        raise ValueError(f"Unknown tool: {tool_name}")
-
-def chat_with_memory(user_message: str, conversation_history: list = None):
-    """Chat with an agent that has persistent memory"""
-    
-    if conversation_history is None:
-        conversation_history = []
-    
-    messages = [
-        {
-            "role": "system",
-            "content": """You are an assistant with persistent memory.
-
-When the user shares important information, store it using memory_store.
-When the user asks about past information, use memory_recall to search.
-When you need context about a specific topic, use memory_find_related.
-
-Always confirm when you've stored or retrieved memories."""
-        },
-        *conversation_history,
-        {"role": "user", "content": user_message}
-    ]
-    
-    response = client.chat.completions.create(
-        model="gpt-4-turbo-preview",
-        messages=messages,
-        tools=MEMORY_TOOLS,
-        tool_choice="auto"
-    )
-    
-    assistant_message = response.choices[0].message
-    
-    # Handle tool calls
-    while assistant_message.tool_calls:
-        tool_results = []
-        
-        for tool_call in assistant_message.tool_calls:
-            result = execute_tool(
-                tool_call.function.name,
-                json.loads(tool_call.function.arguments)
-            )
-            tool_results.append({
-                "tool_call_id": tool_call.id,
-                "role": "tool",
-                "content": json.dumps(result)
-            })
-        
-        # Continue conversation with tool results
-        messages.append(assistant_message)
-        messages.extend(tool_results)
-        
-        response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=messages,
-            tools=MEMORY_TOOLS,
-            tool_choice="auto"
-        )
-        assistant_message = response.choices[0].message
-    
-    return assistant_message.content
+def handle_tool_call(tool_call):
+    name = tool_call.function.name
+    args = json.loads(tool_call.function.arguments)
+    return memory.call(name, args)
 ```
 
-## Basic usage
+Pass `TOOLS` to `client.chat.completions.create(tools=TOOLS)`, then dispatch each `tool_call` through `handle_tool_call`. See the [OpenAI function calling docs](https://platform.openai.com/docs/guides/function-calling) for the full loop.
 
-```python
-# Start a conversation
-print(chat_with_memory(
-    "Remember that our project deadline is March 31st, 2026"
-))
-# Output: I've stored that information in memory...
+## REST API alternative
 
-# Recall later
-print(chat_with_memory(
-    "When is our project deadline?"
-))
-# Output: According to my memory, your project deadline is March 31st, 2026.
-```
+You can also use the [REST API](/api-reference/linked-hypergraph-tools) instead of the MCP JSON-RPC format. REST endpoints accept standard JSON bodies with `Authorization: Bearer hm_YOUR_KEY` headers.
 
-## Advanced patterns
+## Self-hosted
 
-### Conversation history persistence
-
-```python
-def create_memory_agent():
-    """Create an agent that maintains conversation state"""
-    conversation_history = []
-    
-    def chat(user_message: str):
-        response = chat_with_memory(user_message, conversation_history)
-        
-        # Update history
-        conversation_history.append({"role": "user", "content": user_message})
-        conversation_history.append({"role": "assistant", "content": response})
-        
-        return response
-    
-    return chat
-
-# Usage
-agent = create_memory_agent()
-agent("My name is Sarah and I work on the Phoenix project")
-agent("What project do I work on?")  # Uses both conversation and memory
-```
-
-### Async implementation
-
-```python
-import asyncio
-from openai import AsyncOpenAI
-
-async_client = AsyncOpenAI()
-
-async def async_chat_with_memory(user_message: str):
-    """Async version for better performance"""
-    
-    messages = [
-        {"role": "system", "content": "You are an assistant with persistent memory..."},
-        {"role": "user", "content": user_message}
-    ]
-    
-    response = await async_client.chat.completions.create(
-        model="gpt-4-turbo-preview",
-        messages=messages,
-        tools=MEMORY_TOOLS
-    )
-    
-    # Handle tool calls...
-    return response.choices[0].message.content
-
-# Run multiple queries concurrently
-async def batch_queries(queries: list):
-    tasks = [async_chat_with_memory(q) for q in queries]
-    return await asyncio.gather(*tasks)
-```
-
-### Streaming responses
-
-```python
-def stream_chat_with_memory(user_message: str):
-    """Stream responses for better UX"""
-    
-    messages = [
-        {"role": "system", "content": "You are an assistant with persistent memory..."},
-        {"role": "user", "content": user_message}
-    ]
-    
-    stream = client.chat.completions.create(
-        model="gpt-4-turbo-preview",
-        messages=messages,
-        tools=MEMORY_TOOLS,
-        stream=True
-    )
-    
-    collected_tool_calls = []
-    
-    for chunk in stream:
-        delta = chunk.choices[0].delta
-        
-        if delta.content:
-            yield delta.content
-        
-        if delta.tool_calls:
-            collected_tool_calls.extend(delta.tool_calls)
-    
-    # Execute collected tool calls
-    if collected_tool_calls:
-        # Process tools and continue...
-        pass
-```
-
-## Error handling
-
-```python
-def safe_chat_with_memory(user_message: str):
-    """Chat with comprehensive error handling"""
-    
-    try:
-        return chat_with_memory(user_message)
-    
-    except httpx.TimeoutException:
-        return "Memory service timed out. Please try again."
-    
-    except Exception as e:
-        error_msg = str(e)
-        
-        if "RATE_LIMITED" in error_msg:
-            return "Memory rate limit reached. Please wait a moment."
-        elif "UNAUTHORIZED" in error_msg:
-            return "Memory service authentication failed. Check API key."
-        elif "QUOTA_EXCEEDED" in error_msg:
-            return "Memory quota exceeded. Please upgrade your plan."
-        else:
-            # Log and return graceful fallback
-            print(f"Memory error: {e}")
-            return "I encountered an issue with my memory. Responding from context only."
-```
-
-## Troubleshooting
-
-### Function not being called
-
-**Symptoms:** Agent responds without using memory tools
-
-**Solutions:**
-1. Make the system prompt more explicit about when to use memory
-2. Lower temperature for more deterministic behavior
-3. Use `tool_choice={"type": "function", "function": {"name": "memory_recall"}}` to force specific tool
-
-### Slow responses
-
-**Symptoms:** Responses take several seconds
-
-**Solutions:**
-1. Use streaming for perceived performance
-2. Implement caching for repeated queries
-3. Use async for concurrent operations
-
-### JSON parsing errors
-
-**Symptoms:** Tool arguments fail to parse
-
-**Solutions:**
-1. Validate JSON before parsing
-2. Use try/catch with fallback defaults
-3. Consider using structured outputs mode
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="Custom MCP Client" icon="code" href="/guides/custom-mcp">
-    Build your own integration
-  </Card>
-  <Card title="API Reference" icon="book" href="/api-reference">
-    Full tool documentation
-  </Card>
-</CardGroup>
+Replace the URL with your local server address and remove the API key header — the self-hosted server has no auth. See [Self-hosted](/connect/self-hosted).

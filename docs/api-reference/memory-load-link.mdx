@@ -1,214 +1,181 @@
 ---
-title: memory_load_link
-description: Import a subgraph into your knowledge graph
+title: REST API Endpoints
+description: HTTP REST endpoints for non-MCP integrations
 ---
 
-# memory_load_link
+# REST API Endpoints
 
-Import an exported subgraph into your knowledge graph. Use to restore backups, share knowledge between agents, or migrate data.
+For clients that don't use MCP, HyperMemory provides a REST API that maps directly to the MCP tools. All endpoints accept JSON bodies and require authentication.
 
-## Parameters
+## Authentication
 
-<ParamField body="data" type="object" required>
-  The exported subgraph JSON (from `memory_export_subgraph`).
-</ParamField>
+Include one of:
 
-<ParamField body="graph_id" type="string">
-  Target graph for import. Defaults to your account's default graph.
-</ParamField>
+- **API key:** `Authorization: Bearer hm_YOUR_KEY`
+- **OAuth token:** `Authorization: Bearer <supabase_jwt>`
 
-<ParamField body="merge_strategy" type="string">
-  How to handle imported data. Options:
-  - `"append"` (default): Create new nodes with new IDs
-  - `"replace"`: Replace existing nodes if IDs match (use with caution)
-</ParamField>
+## Base URL
 
-<ParamField body="id_prefix" type="string">
-  Prefix to add to all imported node IDs. Useful for namespacing imported data.
-</ParamField>
+```
+https://api.hypermemory.io/api/v1/memory
+```
 
-## Example request
+## Endpoints
+
+### Store
+
+```
+POST /api/v1/memory/store
+```
+
+Create a node. Maps to [`hm_store`](/api-reference/memory-store).
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_load_link",
-    "arguments": {
-      "data": {
-        "nodes": [
-          {
-            "id": "node_abc123",
-            "content": "Sarah Chen, Backend Tech Lead",
-            "node_type": "person",
-            "metadata": {"team": "backend"}
-          }
-        ],
-        "edges": [
-          {
-            "edge_type": "manages",
-            "source": "node_abc123",
-            "target": "node_def456"
-          }
-        ],
-        "hyperedges": []
-      },
-      "graph_id": "production",
-      "merge_strategy": "append",
-      "id_prefix": "imported_"
+  "key": "fact_launch_date",
+  "description": "Product launches on 2026-06-01",
+  "node_type": "fact",
+  "data": {"date": "2026-06-01"}
+}
+```
+
+### Recall
+
+```
+POST /api/v1/memory/recall
+```
+
+Hybrid search. Maps to [`hm_recall`](/api-reference/memory-recall).
+
+```json
+{
+  "query": "launch date"
+}
+```
+
+### Update
+
+```
+POST /api/v1/memory/update
+```
+
+Update a node. Maps to [`hm_update`](/api-reference/memory-update).
+
+```json
+{
+  "key": "fact_launch_date",
+  "description": "Product launch postponed to 2026-07-01",
+  "data": {"date": "2026-07-01", "status": "postponed"}
+}
+```
+
+### Forget
+
+```
+POST /api/v1/memory/forget
+```
+
+Delete a node. Maps to [`hm_forget`](/api-reference/memory-forget).
+
+```json
+{
+  "key": "fact_old_info",
+  "cascade": true
+}
+```
+
+### Ingest
+
+```
+POST /api/v1/memory/ingest
+```
+
+Decompose text into entities. Maps to [`hm_ingest`](/api-reference/memory-add-relationships).
+
+```json
+{
+  "text": "Sarah joined as CTO in January...",
+  "context": "Team update"
+}
+```
+
+### Overview
+
+```
+GET /api/v1/memory/overview
+```
+
+Graph stats. Maps to [`hm_get_overview`](/api-reference/memory-get-overview).
+
+### Add relationships
+
+```
+POST /api/v1/memory/relationships
+```
+
+Create edges between existing nodes. Accepts a list of relationship objects, each with `nodes` (list of 2+ keys) and `relationship` (label string).
+
+```json
+{
+  "relationships": [
+    {
+      "nodes": ["person_alice", "project_phoenix"],
+      "relationship": "Alice leads Project Phoenix"
     }
-  }
+  ]
 }
 ```
 
-## Example response
+### Get relationships
+
+```
+GET /api/v1/memory/relationships/{key}
+```
+
+List all edges connected to a specific node.
+
+### Find related
+
+```
+POST /api/v1/memory/find-related
+```
+
+Graph traversal. Maps to [`hm_find_related`](/api-reference/memory-find-related).
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "import_id": "imp_xyz789",
-    "imported_at": "2026-03-15T14:30:00Z",
-    "target_graph": "production",
-    "id_mapping": {
-      "node_abc123": "imported_node_abc123",
-      "node_def456": "imported_node_def456"
-    },
-    "stats": {
-      "nodes_created": 2,
-      "nodes_updated": 0,
-      "nodes_skipped": 0,
-      "edges_created": 1,
-      "hyperedges_created": 0
-    },
-    "warnings": []
-  }
+  "key": "person_alice"
 }
 ```
 
-## Response fields
+### Timeline
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `import_id` | string | Unique identifier for this import |
-| `imported_at` | string | Import timestamp |
-| `target_graph` | string | Graph data was imported to |
-| `id_mapping` | object | Maps original IDs to new IDs |
-| `stats.nodes_created` | number | New nodes created |
-| `stats.nodes_updated` | number | Existing nodes updated (replace mode) |
-| `stats.nodes_skipped` | number | Nodes skipped due to errors |
-| `stats.edges_created` | number | Edges created |
-| `stats.hyperedges_created` | number | Hyperedges created |
-| `warnings` | array | Non-fatal issues encountered |
-
-## Errors
-
-| Code | Description |
-|------|-------------|
-| `INVALID_PARAMETER` | Missing `data` or invalid structure |
-| `INVALID_EXPORT_FORMAT` | Data doesn't match export schema |
-| `NODE_LIMIT_EXCEEDED` | Import would exceed node limit |
-| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
-
-## Notes
-
-<Info>
-**Free operation** — Imports don't count against your query limit.
-</Info>
-
-<Info>
-**Requires admin scope** — This operation requires `memory:admin` scope.
-</Info>
-
-### Merge strategies
-
-**append (default)**
-- All nodes get new IDs
-- Safe — never overwrites existing data
-- Use for: Sharing knowledge, adding new data
-
-**replace**
-- Nodes with matching IDs are updated
-- Nodes without matches are created
-- Use for: Restoring backups, syncing data
-
-<Warning>
-**Replace mode warning** — `replace` can overwrite existing nodes. Only use when you're sure you want to overwrite.
-</Warning>
-
-### ID mapping
-
-Imported nodes receive new IDs. Use the `id_mapping` response to track:
-
-```python
-response = client.call_tool("memory_load_link", {"data": export_data})
-
-# Find the new ID for an imported node
-old_id = "node_abc123"
-new_id = response["id_mapping"][old_id]
+```
+POST /api/v1/memory/timeline
 ```
 
-### Edge handling
+Temporal recall. Maps to [`hm_timeline`](/api-reference/memory-export-subgraph).
 
-Edges reference node IDs. During import:
+### Timeline write
 
-1. Source and target IDs are mapped to new IDs
-2. If both nodes exist (imported or pre-existing), the edge is created
-3. If either node is missing, the edge is skipped (warning added)
-
-### Import validation
-
-Before importing, the data is validated:
-
-- JSON structure matches export schema
-- All edge endpoints reference valid node IDs
-- Hyperedges have at least 3 nodes
-
-Invalid items are skipped with warnings.
-
-### Use cases
-
-**Restore from backup:**
-```json
-{
-  "data": backup_data,
-  "merge_strategy": "replace"
-}
+```
+POST /api/v1/memory/timeline/write
 ```
 
-**Share knowledge between agents:**
-```json
-{
-  "data": agent_a_export,
-  "graph_id": "agent_b_graph",
-  "id_prefix": "from_agent_a_"
-}
+Write a diary entry. Maps to [`hm_timeline_write`](/api-reference/memory-export-subgraph).
+
+### Health
+
+```
+GET /api/v1/memory/health
 ```
 
-**Migrate to new graph:**
-```json
-{
-  "data": old_graph_export,
-  "graph_id": "new_graph",
-  "merge_strategy": "append"
-}
+Check server connectivity and status.
+
+### Export
+
+```
+GET /api/v1/memory/export
 ```
 
-### Large imports
-
-For large imports (>1000 nodes):
-
-1. Consider batching into multiple smaller imports
-2. Monitor node limits before importing
-3. Use `id_prefix` to namespace batches
-
-```python
-for batch in chunks(nodes, size=500):
-    client.call_tool("memory_load_link", {
-        "data": {"nodes": batch, "edges": [], "hyperedges": []},
-        "id_prefix": f"batch_{batch_num}_"
-    })
-```
+Export the full graph as JSON.

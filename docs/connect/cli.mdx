@@ -1,0 +1,123 @@
+---
+title: CLI
+description: Install and use the hm command-line tool
+---
+
+# CLI
+
+The `hm` CLI ([hypermemory-cli](https://pypi.org/project/hypermemory-cli/)) is a command-line tool for reading and writing to HyperMemory. It outputs JSON to stdout, making it composable with `jq`, scripts, and AI agents running shell commands.
+
+## Install
+
+```bash
+pip install hypermemory-cli
+```
+
+Requires Python 3.10+.
+
+## Authenticate
+
+Auth is resolved in this priority order:
+
+1. **Environment variable** (highest priority):
+
+```bash
+export HYPERMEMORY_API_KEY=hm_YOUR_KEY_HERE
+```
+
+2. **Config file:**
+
+```bash
+hm config --set-key hm_YOUR_KEY_HERE
+```
+
+3. **Browser login (OAuth 2.1 + PKCE):**
+
+```bash
+hm login
+```
+
+Opens your browser for GitHub-based OAuth. Tokens are saved to `~/.config/hypermemory/config.json` and refresh automatically.
+
+Generate API keys at **Dashboard > Settings > API Keys** at [app.hypermemory.io](https://app.hypermemory.io).
+
+## API endpoint
+
+Default: `https://api.hypermemory.io`. Override with:
+
+```bash
+hm config --set-url https://your-custom-url.example.com
+```
+
+## Commands
+
+### Memory operations
+
+| Command | Description |
+|---|---|
+| `hm store KEY "desc" --type TYPE` | Create a node |
+| `hm recall "query"` | Search by natural language or regex |
+| `hm update KEY --desc "new info"` | Update an existing node |
+| `hm forget KEY [--cascade]` | Delete a node (optionally cascade edges) |
+| `hm relate --from A --to B --rel R` | Create a relationship |
+| `hm relationships KEY` | List edges connected to a node |
+| `hm find KEY [--depth N]` | Traverse the graph from a node |
+| `hm ingest "text" [--context "label"]` | Auto-extract nodes from dense text |
+| `hm overview` | Graph stats and top nodes |
+| `hm export [--no-ontology]` | Export full graph as JSON |
+
+### Timeline
+
+| Command | Description |
+|---|---|
+| `hm timeline` | Temporal recall with filters |
+| `hm timeline-write "entry"` | Write an explicit diary entry |
+
+### Auth and config
+
+| Command | Description |
+|---|---|
+| `hm login` | OAuth 2.1 + PKCE via browser |
+| `hm logout` | Clear saved tokens |
+| `hm config` | Show current config |
+| `hm config --set-key KEY` | Save an API key |
+| `hm config --set-url URL` | Override the API endpoint |
+| `hm health` | Check connectivity |
+| `hm version` | Print CLI version |
+
+## Node types
+
+Every `hm store` requires `--type`. Types are divided into two categories:
+
+**Axiom types** (protected, cannot be removed):
+
+`user`, `person`, `organization`, `location`, `group`, `product`, `asset`, `document`, `URL`
+
+**Extendable types:**
+
+`component`, `event`, `concept`, `project`, `tool`, `technology`, `preference`, `fact`, `skill`, `decision`, `artifact`
+
+New types can be created on the fly by the server's ontology canonicalizer.
+
+## Key format
+
+Use the `{type}_{name}` convention: `person_alice`, `decision_jwt_auth`, `tech_redis`.
+
+## Relationships
+
+Describe connections with `--rel` in plain language — explain **why** the connection exists:
+
+```bash
+hm relate --from component_api --to tech_redis \
+  --rel "API depends on Redis for session caching and rate limiting"
+```
+
+## Pipe-friendly output
+
+All data commands output JSON to stdout, errors to stderr:
+
+```bash
+hm overview | jq '.total_nodes'
+hm recall "decisions" | jq '.nodes[] | select(.node_type == "decision") | .key'
+hm export > backup-$(date +%F).json
+```

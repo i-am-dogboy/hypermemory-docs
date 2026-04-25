@@ -1,170 +1,47 @@
 ---
-title: memory_update
-description: Update an existing memory node
+title: hm_update
+description: Update an existing node's fields
 ---
 
-# memory_update
+# hm_update
 
-Update an existing memory node's content, type, or metadata. Updates are versioned — previous state is preserved for temporal queries.
+Modify fields on an existing node. If the description changes, the server re-embeds the vector representation for search.
 
 ## Parameters
 
-<ParamField body="node_id" type="string" required>
-  The ID of the node to update.
-</ParamField>
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `key` | `str` | **required** | Node key to update |
+| `description` | `str \| None` | `None` | New description (replaces existing) |
+| `data` | `dict \| None` | `None` | Updated metadata |
+| `node_type` | `str \| None` | `None` | Updated type classification |
 
-<ParamField body="content" type="string">
-  New content for the node. If not provided, content remains unchanged.
-</ParamField>
+## Response
 
-<ParamField body="node_type" type="string">
-  New type for the node. If not provided, type remains unchanged.
-</ParamField>
+Returns the updated node with its current state.
 
-<ParamField body="metadata" type="object">
-  Metadata to merge with existing metadata. New keys are added; existing keys are overwritten. To remove a key, set it to `null`.
-</ParamField>
-
-<ParamField body="graph_id" type="string">
-  Target graph. Defaults to your account's default graph.
-</ParamField>
-
-## Example request
+## Example
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_update",
-    "arguments": {
-      "node_id": "node_abc123",
-      "content": "API response time is 100ms after caching improvements",
-      "metadata": {
-        "status": "achieved",
-        "achieved_date": "2026-03-15",
-        "previous_value": null
-      }
-    }
-  }
+  "key": "decision_jwt_auth",
+  "description": "JWT chosen for auth — deployed to production 2026-04-15",
+  "data": {"status": "deployed", "deploy_date": "2026-04-15"}
 }
 ```
 
-## Example response
+## CLI equivalent
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "id": "node_abc123",
-    "status": "updated",
-    "version": 3,
-    "updated_at": "2026-03-15T14:30:00Z",
-    "changes": {
-      "content": true,
-      "metadata": ["status", "achieved_date", "previous_value"]
-    }
-  }
-}
+```bash
+hm update decision_jwt_auth --desc "JWT chosen for auth — deployed to production 2026-04-15"
 ```
 
-## Response fields
+## REST endpoint
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Node identifier |
-| `status` | string | Always `"updated"` on success |
-| `version` | number | New version number |
-| `updated_at` | string | Update timestamp |
-| `changes.content` | boolean | Whether content was changed |
-| `changes.metadata` | array | Metadata keys that were changed |
-
-## Errors
-
-| Code | Description |
-|------|-------------|
-| `INVALID_PARAMETER` | Invalid parameter type |
-| `NODE_NOT_FOUND` | Node doesn't exist |
-| `NO_CHANGES` | Update would result in no changes |
-| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
-
-## Notes
-
-<Info>
-**Free operation** — Updates don't count against your query limit.
-</Info>
-
-### Metadata merging
-
-Metadata is merged, not replaced:
-
-**Before:**
-```json
-{"status": "in_progress", "priority": "high"}
+```
+POST /api/v1/memory/update
 ```
 
-**Update:**
-```json
-{"status": "completed", "completed_date": "2026-03-15"}
-```
+## Self-hosted equivalent
 
-**After:**
-```json
-{
-  "status": "completed",
-  "priority": "high",
-  "completed_date": "2026-03-15"
-}
-```
-
-### Removing metadata keys
-
-Set a key to `null` to remove it:
-
-```json
-{
-  "metadata": {
-    "temporary_flag": null
-  }
-}
-```
-
-### Version history
-
-Each update creates a new version. Retrieve history with temporal queries:
-
-```json
-{
-  "name": "memory_get_versions",
-  "arguments": {
-    "node_id": "node_abc123"
-  }
-}
-```
-
-Or query the node's state at a specific point in time:
-
-```json
-{
-  "name": "memory_recall",
-  "arguments": {
-    "query": "API response time",
-    "time_range": {
-      "end": "2026-02-28T23:59:59Z"
-    }
-  }
-}
-```
-
-### Relationships
-
-`memory_update` doesn't modify relationships. To change edges:
-
-1. Create new edges via `memory_store` with `relationships`
-2. Or delete the node and recreate it with new relationships
-
-<Warning>
-**Concurrent updates** — If multiple clients update the same node simultaneously, the last write wins. Implement optimistic locking in your application if needed.
-</Warning>
+The open-source server's `memory_update` tool also supports `merge_data` (bool, default `True` for deep-merge vs replace), `add_relationships`, `remove_relationships`, `assets`, `source_uri`, and `force_extra_data`.

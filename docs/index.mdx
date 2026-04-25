@@ -1,69 +1,43 @@
 ---
 title: Introduction
-description: What is HyperMemory and who is it for
+description: Long-term memory for AI agents — store, recall, and connect knowledge across conversations
 ---
 
-# Introduction
+# HyperMemory
 
-HyperMemory is a long-term memory service for AI agents, built on hypergraph technology and exposed as an MCP server.
+HyperMemory is a persistent knowledge graph memory system for AI agents. Agents store facts, decisions, preferences, and relationships as nodes and hyperedges in a [hypergraph](https://github.com/RunStack-AI/hypergraph_memory), then recall them through hybrid search (BM25, vector similarity, regex) or graph traversal. Memory persists across conversations.
 
-## What makes HyperMemory different
+The hosted server at `api.hypermemory.io` exposes **11 MCP tools** (`hm_store`, `hm_recall`, `hm_find_related`, `hm_ingest`, …) over Streamable HTTP that any MCP-compatible client can call. A REST API is also available for non-MCP integrations.
 
-- **Not a vector database** — Memories have explicit relationships, not just embeddings
-- **Not a chat history store** — A structured knowledge graph your agent navigates
-- **Hypergraph-native** — Multi-way relationships that capture complex contexts
+## Three ways to connect
 
-## Who is HyperMemory for
-
-- Developers building AI agents that need to remember across sessions
-- Teams running multi-agent systems with shared knowledge needs
-- Anyone using MCP-compatible tools (Claude, OpenClaw, CrewAI, OpenAI)
-
-## Key capabilities
-
-<CardGroup cols={2}>
-  <Card title="Store memories" icon="database">
-    Save nodes with metadata and relationships
+<CardGroup cols={3}>
+  <Card title="MCP with OAuth" icon="shield-check" href="/connect/mcp-oauth">
+    Point your MCP client at the hosted server. Authenticate via OAuth 2.1 with GitHub. Works with Claude Desktop, Claude Code, Cursor, Windsurf, OpenClaw, n8n.
   </Card>
-  <Card title="Recall by language" icon="message-question">
-    Query memories using natural language
+  <Card title="MCP with API key" icon="key" href="/connect/mcp-api-key">
+    Generate an API key at app.hypermemory.io and pass it as a Bearer token. For programmatic and server-side use.
   </Card>
-  <Card title="Traverse relationships" icon="diagram-project">
-    Navigate multi-way connections (hyperedges)
-  </Card>
-  <Card title="Share knowledge" icon="share-nodes">
-    Export/import subgraphs between agents
+  <Card title="CLI" icon="terminal" href="/connect/cli">
+    Install the `hm` CLI from PyPI. Authenticate with `hm login` or an API key. Pipe-friendly JSON output.
   </Card>
 </CardGroup>
 
-## How it works
+You can also [self-host](/connect/self-hosted) the open-source server from the repository with no account required.
 
-HyperMemory runs as a remote MCP server at `api.hypermemory.io`. Your agent connects over HTTP/SSE, authenticates with an API key, and gets access to memory tools.
+## Quick links
 
-Memories are stored as nodes in a hypergraph. Relationships between memories are stored as edges and hyperedges. Your agent reads and writes to this graph using natural MCP tool calls.
-
-```
-Your Agent  ─────►  HyperMemory MCP Server  ─────►  Hypergraph Database
-             │                                            │
-             │  memory_store()                            │  Nodes
-             │  memory_recall()                           │  Edges
-             │  memory_find_related()                     │  Hyperedges
-             │                                            │
-```
-
-## Available memory tools
-
-| Tool | Description |
-|------|-------------|
-| `memory_store` | Store a new memory node |
-| `memory_recall` | Query memories by natural language |
-| `memory_find_related` | Find nodes related to a given node |
-| `memory_get_relationships` | Get all edges/hyperedges for a node |
-| `memory_update` | Update an existing node |
-| `memory_forget` | Delete a node |
-| `memory_export_subgraph` | Export a portion of the graph |
-| `memory_load_link` | Import a subgraph |
-
-<Card title="Ready to start?" icon="rocket" href="/quickstart">
-  Get your agent connected in 5 minutes
-</Card>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Connected in under a minute
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    All 11 MCP tools
+  </Card>
+  <Card title="Integration Guides" icon="plug" href="/guides/claude">
+    Claude, OpenClaw, CrewAI, n8n, OpenAI
+  </Card>
+  <Card title="Concepts" icon="diagram-project" href="/concepts/hypergraph">
+    Nodes, edges, hyperedges, linked graphs
+  </Card>
+</CardGroup>

@@ -1,0 +1,85 @@
+---
+title: Linked hypergraphs
+description: Multiple memory graphs and the multi-graph system
+---
+
+# Linked hypergraphs
+
+HyperMemory supports two levels of multi-graph functionality: the **hosted multi-graph system** (separate knowledge bases per account) and **linked hypergraph files** (namespace-merged JSON sources in the open-source server).
+
+## Hosted multi-graph system
+
+Each user account on the hosted service can have multiple memory graphs — separate, isolated knowledge bases.
+
+### Graph limits by plan
+
+| Plan | Graphs |
+|---|---|
+| Free | 1 |
+| Basic | 1 |
+| Pro | 4 |
+| Business | 20 |
+| Enterprise | Unlimited |
+| RunStack | 1 |
+
+### Operations
+
+- **Create** a new graph
+- **List** all graphs
+- **Rename** a graph
+- **Delete** a graph (cascading: removes all SurrealDB data, Qdrant vectors, Redis state, and associated API keys)
+- **Set default** graph
+
+### Active graph
+
+The dashboard uses the `X-Graph-Id` header to select the active graph. API keys are bound to a specific graph at creation time.
+
+### Frozen graphs
+
+On plan downgrade, excess graphs become **read-only** (frozen). Upgrade your plan to unfreeze them.
+
+## Linked hypergraph files (self-hosted)
+
+The open-source server can **merge** multiple JSON hypergraph files at runtime:
+
+1. **Namespaces** every imported key (`prefix:local_key`) so two files never collide.
+2. Exposes **link nodes** (nodes with `.json` hypergraph URIs in `assets`) for lazy loading.
+3. Supports **forward references** in the home graph and **back references** with fragment URIs in linked files.
+4. Allows **exporting** a subgraph to a new file with anchor and return links.
+
+### Link nodes
+
+A link is an ordinary node whose `assets` array includes URIs to other hypergraph JSON files. Use `memory_discover_links` to list them, `memory_get_summary` to preview a URI, and `memory_load_link` to import.
+
+<Warning>
+All JSON assets on a link node load together when you call `memory_load_link`. For isolation, use separate link nodes per remote file.
+</Warning>
+
+### Tool cheat sheet (self-hosted)
+
+| Goal | Tool |
+|------|------|
+| List link nodes | `memory_discover_links` |
+| Preview stats | `memory_get_summary` |
+| Load one file | `memory_load_link` |
+| Load everything | `memory_load_all_links` |
+| Save edits back | `memory_save_source` (writable loads) |
+| Unload from memory | `memory_unload_link` |
+| Extract a subgraph | `memory_export_subgraph` |
+
+### When to split graphs
+
+- **Domain separation** (legal vs product vs people) with explicit bridges
+- **Size** — keep each file under the complexity your agents can search effectively
+- **Sharing** — hand a file to another project while anchors maintain a link back
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Temporal memory" icon="clock" href="/concepts/temporal-memory">
+    Time-aware nodes and timeline
+  </Card>
+  <Card title="Hypergraph" icon="shapes" href="/concepts/hypergraph">
+    Why hyperedges matter
+  </Card>
+</CardGroup>

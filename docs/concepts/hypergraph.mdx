@@ -9,7 +9,7 @@ HyperMemory stores your agent's knowledge in a hypergraph — a data structure t
 
 ## Graphs you already know
 
-You're probably familiar with regular graphs: nodes connected by edges.
+A regular graph has nodes connected by edges, where each edge connects exactly two nodes.
 
 ```
 Alice ────manages────► Project Alpha
@@ -18,7 +18,7 @@ Alice ────manages────► Project Alpha
   └───collaborates───► Bob
 ```
 
-Each edge connects exactly two nodes. This works well for simple relationships, but real-world knowledge is messier.
+This works for simple relationships, but real-world knowledge is messier.
 
 ## What makes a hypergraph different
 
@@ -35,14 +35,14 @@ In a hypergraph, a single edge — called a **hyperedge** — can connect three 
 └─────────────────────────────────────────────┘
 ```
 
-This single hyperedge captures that Alice, Project Alpha, and Sprint 12 are all connected through the concept of "Sprint Planning" — without needing to create six separate binary edges.
+This single hyperedge captures that Alice, Project Alpha, and Sprint 12 are all connected through "Sprint Planning" — without needing to create six separate binary edges.
 
 ## Why this matters for AI memory
 
 Real-world knowledge rarely fits into neat pairs:
 
 - **Decisions** involve multiple people, options, and outcomes
-- **Events** connect participants, locations, times, and topics  
+- **Events** connect participants, locations, times, and topics
 - **Projects** span teams, milestones, dependencies, and stakeholders
 
 With binary edges, your agent has to reconstruct complex contexts by traversing many connections. With hyperedges, the context is already captured in one relationship.
@@ -69,16 +69,18 @@ Decision ──outcome──► Approved
 
 1 hyperedge. The full context is captured atomically.
 
-## HyperMemory's hypergraph features
+## HyperMemory's data model
 
-| Feature | Description |
+The hosted service (SurrealDB-backed) stores data as:
+
+| Structure | Description |
 |---------|-------------|
-| **Nodes** | Individual memories (facts, people, concepts, decisions) |
-| **Edges** | Binary relationships between two nodes |
-| **Hyperedges** | Multi-way relationships connecting 3+ nodes |
-| **Typed relationships** | All edges and hyperedges have labels/types |
-| **Metadata** | Attach key-value data to nodes and edges |
-| **Temporal awareness** | Every element has timestamps; query by time range |
+| **Nodes** | Keyed entities with `key`, `description`, `data`, and `node_type` |
+| **Edges** (`relates_to`) | Directed binary relationships between two nodes with a natural-language label |
+| **Hyperedges** | N-ary relationships connecting 3+ nodes via `hyperedge` + `participates_in` records |
+| **Ontology** | Auto-managed catalog of types (`onto_type`) and relationships (`onto_rel`) |
+
+The self-hosted open-source server stores all data in a single JSON file with the same logical structure.
 
 ## When to use edges vs hyperedges
 
@@ -92,7 +94,7 @@ Decision ──outcome──► Approved
 | Event with multiple participants/outcomes | Hyperedge |
 
 <Note>
-You don't always need to decide upfront. Start with simple edges, and create hyperedges when you recognize patterns that involve multiple connected concepts.
+You don't always need to decide upfront. The server's enrichment pipeline automatically creates edges and hyperedges from stored descriptions when appropriate.
 </Note>
 
 ## Next steps

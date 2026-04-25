@@ -1,0 +1,51 @@
+---
+title: n8n
+description: Connect HyperMemory to n8n workflows via MCP
+---
+
+# n8n
+
+n8n's MCP node can connect directly to HyperMemory's hosted server, giving your workflows access to all 11 memory tools.
+
+## Setup
+
+1. Add an **MCP Client** node to your workflow.
+2. Set **Server URL** to:
+
+```
+https://api.hypermemory.io/mcp
+```
+
+3. **Authentication:** configure either:
+   - **OAuth2** credentials (recommended) — n8n handles the token flow
+   - **Header Auth** — set `Authorization` to `Bearer hm_YOUR_KEY_HERE`
+
+4. Select the tool to call (e.g. `hm_store`, `hm_recall`).
+
+## Example: store a memory from a webhook
+
+1. **Webhook** node receives incoming data
+2. **MCP Client** node calls `hm_store` with:
+   - `key`: extracted from webhook payload
+   - `description`: summary of the event
+   - `data`: structured metadata
+
+## Example: recall before responding
+
+1. **MCP Client** calls `hm_recall` with a search query
+2. **IF** node checks whether results were returned
+3. Branch: use recalled context or proceed without
+
+## Example: ingest a document
+
+1. **HTTP Request** node fetches document content
+2. **MCP Client** calls `hm_ingest` with the full text and a context label
+3. The server decomposes the text into graph entities in one LLM pass
+
+## Available tools
+
+All 11 `hm_*` tools from the server are available through the MCP node. See [API Reference](/api-reference/overview) for parameters and response shapes.
+
+## Self-hosted
+
+If running the [open-source server](/connect/self-hosted) with the HTTP wrapper, point n8n at your local URL (e.g. `http://localhost:8080`) instead. No auth header is needed for the self-hosted server. Self-hosted tools use the `memory_*` prefix.

@@ -1,164 +1,60 @@
 ---
-title: API Reference Overview
-description: Complete reference for HyperMemory MCP tools
+title: API Reference
+description: All 11 MCP tools on the hosted HyperMemory service
 ---
 
 # API Reference
 
-HyperMemory exposes 8 MCP tools for memory operations. This reference documents each tool's parameters, responses, and behavior.
+The hosted HyperMemory service at `api.hypermemory.io` exposes 11 MCP tools over Streamable HTTP at `/mcp`. These tools are also accessible via the REST API and the `hm` CLI.
 
-## Available tools
+## MCP tools
 
-| Tool | Description | Scope Required |
-|------|-------------|----------------|
-| [`memory_store`](/api-reference/memory-store) | Store a new memory node | `memory:write` |
-| [`memory_recall`](/api-reference/memory-recall) | Query memories by natural language | `memory:read` |
-| [`memory_find_related`](/api-reference/memory-find-related) | Find nodes related to a given node | `memory:read` |
-| [`memory_get_relationships`](/api-reference/memory-get-relationships) | Get edges and hyperedges for a node | `memory:read` |
-| [`memory_update`](/api-reference/memory-update) | Update an existing node | `memory:write` |
-| [`memory_forget`](/api-reference/memory-forget) | Delete a node | `memory:write` |
-| [`memory_export_subgraph`](/api-reference/memory-export-subgraph) | Export a portion of the graph | `memory:admin` |
-| [`memory_load_link`](/api-reference/memory-load-link) | Import a subgraph | `memory:admin` |
+### Core tools
 
-## Usage costs
+| Tool | Description |
+|---|---|
+| [`hm_store`](/api-reference/memory-store) | Create a node; triggers background enrichment and entity detection |
+| [`hm_update`](/api-reference/memory-update) | Update a node's fields; re-embeds on description change |
+| [`hm_recall`](/api-reference/memory-recall) | Hybrid search (BM25 + vector + edge BM25 + regex) |
+| [`hm_find_related`](/api-reference/memory-find-related) | Graph traversal from a starting node |
+| [`hm_get_overview`](/api-reference/memory-get-overview) | Graph stats, top nodes, type distribution |
+| [`hm_forget`](/api-reference/memory-forget) | Delete a node with optional cascade |
+| [`hm_ingest`](/api-reference/memory-add-relationships) | Decompose dense text into graph entities in one LLM pass |
 
-| Operation Type | Cost |
-|---------------|------|
-| Write operations (store, update, forget, load_link) | Free |
-| Read operations (recall, find_related, get_relationships, export) | 1 query |
+### File tools
 
-## Request format
+| Tool | Description |
+|---|---|
+| [`hm_upload_file`](/api-reference/memory-get-relationships) | S3 upload + AI summary + graph node (Pro+ plans) |
+| [`hm_list_files`](/api-reference/memory-get-relationships) | Query uploaded files by type or name |
 
-All tools are called via MCP JSON-RPC:
+### Timeline tools
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "tool_name",
-    "arguments": {
-      "param1": "value1",
-      "param2": "value2"
-    }
-  }
-}
-```
+| Tool | Description |
+|---|---|
+| [`hm_timeline`](/api-reference/memory-export-subgraph) | Temporal recall with query, period, date range, and node_key filters |
+| [`hm_timeline_write`](/api-reference/memory-export-subgraph) | Write an explicit diary entry |
 
-## Response format
+## REST API endpoints
 
-Successful responses:
+All REST endpoints accept JSON bodies and require `Authorization: Bearer hm_YOUR_KEY` or a Supabase JWT.
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "data": "..."
-  }
-}
-```
+| Method | Path | Maps to |
+|---|---|---|
+| POST | `/api/v1/memory/store` | hm_store |
+| POST | `/api/v1/memory/recall` | hm_recall |
+| POST | `/api/v1/memory/update` | hm_update |
+| POST | `/api/v1/memory/forget` | hm_forget |
+| POST | `/api/v1/memory/ingest` | hm_ingest |
+| GET | `/api/v1/memory/overview` | hm_get_overview |
+| POST | `/api/v1/memory/relationships` | hm_add_relationships |
+| GET | `/api/v1/memory/relationships/{key}` | hm_get_relationships |
+| POST | `/api/v1/memory/find-related` | hm_find_related |
+| POST | `/api/v1/memory/timeline` | hm_timeline |
+| POST | `/api/v1/memory/timeline/write` | hm_timeline_write |
+| GET | `/api/v1/memory/health` | hm_health |
+| GET | `/api/v1/memory/export` | hm_export_full |
 
-Error responses:
+## Self-hosted tools
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message",
-    "details": {}
-  }
-}
-```
-
-## Common error codes
-
-| Code | Description | Resolution |
-|------|-------------|------------|
-| `INVALID_PARAMETER` | Missing or invalid parameter | Check parameter types and requirements |
-| `NODE_NOT_FOUND` | Referenced node doesn't exist | Verify node ID |
-| `UNAUTHORIZED` | Invalid or missing API key | Check Authorization header |
-| `FORBIDDEN` | Key lacks required scope | Use key with appropriate scope |
-| `RATE_LIMITED` | Too many requests | Implement backoff, try later |
-| `QUOTA_EXCEEDED` | Monthly limit reached | Upgrade plan or wait for reset |
-
-## Base URL
-
-```
-https://api.hypermemory.io/mcp
-```
-
-## Authentication
-
-All requests require Bearer token authentication:
-
-```
-Authorization: Bearer YOUR_API_KEY
-```
-
-## Rate limits
-
-| Plan | Requests/minute |
-|------|-----------------|
-| Free | 60 |
-| Developer | 300 |
-| Pro | 1000 |
-| Enterprise | Custom |
-
-## Pagination
-
-Tools that return lists support pagination:
-
-```json
-{
-  "arguments": {
-    "query": "...",
-    "max_results": 10,
-    "offset": 20
-  }
-}
-```
-
-Response includes pagination info:
-
-```json
-{
-  "results": [...],
-  "total": 150,
-  "offset": 20,
-  "limit": 10,
-  "has_more": true
-}
-```
-
-## Tool reference
-
-<CardGroup cols={2}>
-  <Card title="memory_store" icon="plus" href="/api-reference/memory-store">
-    Create new memory nodes
-  </Card>
-  <Card title="memory_recall" icon="magnifying-glass" href="/api-reference/memory-recall">
-    Query memories by language
-  </Card>
-  <Card title="memory_find_related" icon="diagram-project" href="/api-reference/memory-find-related">
-    Find connected nodes
-  </Card>
-  <Card title="memory_get_relationships" icon="link" href="/api-reference/memory-get-relationships">
-    Get edges for a node
-  </Card>
-  <Card title="memory_update" icon="pen" href="/api-reference/memory-update">
-    Modify existing nodes
-  </Card>
-  <Card title="memory_forget" icon="trash" href="/api-reference/memory-forget">
-    Delete nodes
-  </Card>
-  <Card title="memory_export_subgraph" icon="download" href="/api-reference/memory-export-subgraph">
-    Export graph portions
-  </Card>
-  <Card title="memory_load_link" icon="upload" href="/api-reference/memory-load-link">
-    Import subgraphs
-  </Card>
-</CardGroup>
+The open-source [hypergraph_memory](https://github.com/RunStack-AI/hypergraph_memory) server exposes `memory_*` tools (e.g. `memory_store`, `memory_recall`) plus linked hypergraph management tools. See [Self-hosted](/connect/self-hosted) and [Linked hypergraphs](/concepts/linked-hypergraphs) for details.

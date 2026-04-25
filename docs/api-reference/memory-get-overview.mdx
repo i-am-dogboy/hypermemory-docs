@@ -1,0 +1,56 @@
+---
+title: hm_get_overview
+description: Graph stats, top nodes, and type distribution
+---
+
+# hm_get_overview
+
+Returns a high-level summary of the hypergraph including statistics, the most-connected nodes, and the distribution of node types.
+
+## Parameters
+
+None.
+
+## Response
+
+| Field | Description |
+|---|---|
+| `stats` | Node count, edge count, hyperedge count |
+| `top_nodes` | Most-connected nodes ranked by connection count, with key, description, and connection count |
+| `types` | List of node types with their counts and whether they are protected (axiom) types |
+
+## Example response
+
+```json
+{
+  "stats": {
+    "nodes": 2596,
+    "edges": 3741,
+    "hyperedges": 333
+  },
+  "top_nodes": [
+    {
+      "key": "project_phoenix",
+      "description": "API modernization initiative for checkout service",
+      "connections": 134
+    }
+  ],
+  "types": [
+    {"name": "concept", "node_count": 178, "protected": false},
+    {"name": "decision", "node_count": 76, "protected": false},
+    {"name": "person", "node_count": 25, "protected": true}
+  ]
+}
+```
+
+## CLI equivalent
+
+```bash
+hm overview
+```
+
+## REST endpoint
+
+```
+GET /api/v1/memory/overview
+```

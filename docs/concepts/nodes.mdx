@@ -1,168 +1,118 @@
 ---
 title: Nodes
-description: Understanding memory nodes and how to work with them
+description: What a memory node is in HyperMemory
 ---
 
 # Nodes
 
-A node is the fundamental unit of memory in HyperMemory — a single piece of knowledge your agent can store, retrieve, and connect.
+A **node** is the atomic unit in HyperMemory. Every piece of knowledge — a fact, a person, a decision, a preference — is stored as a node with these fields:
 
-## What is a node?
-
-A node represents one memory: a fact, person, concept, decision, preference, or any other piece of information.
-
-Every node has:
-
-- **Content** — The text description of the memory
-- **Type** — A category label you define
-- **Metadata** — Optional key-value pairs for structured data
-- **Timestamps** — When it was created and last updated
-- **Relationships** — Connections to other nodes
-
-## Node structure
-
-```json
-{
-  "id": "node_abc123",
-  "content": "Sarah Chen prefers async communication via Slack",
-  "node_type": "preference",
-  "metadata": {
-    "person": "Sarah Chen",
-    "channel": "Slack",
-    "confidence": "high"
-  },
-  "created_at": "2026-02-15T10:30:00Z",
-  "updated_at": "2026-02-28T14:22:00Z",
-  "relationships": ["node_def456", "node_ghi789"]
-}
-```
+| Field | Type | Description |
+|---|---|---|
+| `key` | `str` | Unique identifier you choose and reuse (e.g. `person_sarah_chen`, `decision_jwt_auth`) |
+| `description` | `str` | Human-readable text that should stand alone — searched by BM25 and vector similarity |
+| `data` | `dict` | Optional structured JSON for fields you want to filter or pattern-match |
+| `node_type` | `str` | Classification of the node (e.g. `person`, `decision`, `concept`) |
 
 ## Node types
 
-HyperMemory doesn't enforce a fixed schema for node types — you define your own based on your use case.
+Types are divided into two categories:
 
-### Common node types
+**Axiom types** (protected — cannot be removed from the system):
 
-| Type | Example Content |
-|------|-----------------|
-| `person` | "Sarah Chen, Backend Tech Lead" |
-| `project` | "Project Alpha: API modernization initiative" |
-| `decision` | "We chose PostgreSQL over MongoDB for the new service" |
-| `preference` | "Team prefers morning standups at 9 AM" |
-| `fact` | "Our API handles 10,000 requests per minute" |
-| `event` | "Quarterly planning meeting on March 15" |
-| `document` | "Summary of Q3 roadmap document" |
-| `concept` | "Microservices architecture pattern" |
+| Type | Use for |
+|---|---|
+| `user` | The primary user (singleton `user_profile`) |
+| `person` | People — teammates, contacts |
+| `organization` | Companies, teams, departments |
+| `location` | Cities, offices, regions |
+| `group` | Groups, committees |
+| `product` | Products, services |
+| `asset` | Files, images, resources |
+| `document` | Documents, reports, specs |
+| `URL` | Web URLs, links |
 
-### Why types matter
+**Extendable types** (can be added to):
 
-Types help your agent:
+| Type | Use for |
+|---|---|
+| `component` | Software components, services, libraries |
+| `event` | Meetings, launches, incidents |
+| `concept` | Ideas, patterns, abstract topics |
+| `project` | Projects, initiatives |
+| `tool` | Development tools, utilities |
+| `technology` | Languages, frameworks |
+| `preference` | User preferences and settings |
+| `fact` | Verified facts, data points |
+| `skill` | Skills, expertise, capabilities |
+| `decision` | Architecture choices, policy decisions |
+| `artifact` | Configs, repos, outputs |
 
-- **Filter results** — "Show me only decisions from Q3"
-- **Reason about categories** — "Who are all the people involved?"
-- **Apply different logic** — Handle facts vs opinions differently
+New types are created on the fly by the server's ontology canonicalizer — the system auto-manages an `onto_type` catalog.
 
-<Tip>
-Keep your type vocabulary consistent. Use `person` everywhere, not `person`, `user`, `team_member`, and `individual`.
-</Tip>
+## Key format
 
-## Creating nodes
+Use the `{type}_{name}` convention: `person_alice`, `decision_jwt_auth`, `tech_redis`.
 
-Use `memory_store` to create a new node:
+## The `user_profile` singleton
 
-```
-memory_store(
-  content="The frontend team uses React 18 with TypeScript",
-  node_type="fact",
-  metadata={
-    "team": "frontend",
-    "technology": "React",
-    "version": "18"
-  }
-)
-```
+A special `user_profile` node is auto-created on first `hm_store` call. It represents the graph owner and is updated automatically by the enrichment pipeline.
 
-**Response:**
+## Example node
+
 ```json
 {
-  "id": "node_xyz789",
-  "status": "created",
-  "created_at": "2026-03-03T14:22:00Z"
+  "key": "decision_q3_api_perf",
+  "description": "Q3 org priority: reduce API p95 latency under 100ms",
+  "node_type": "decision",
+  "data": {
+    "quarter": "Q3-2026",
+    "sponsor": "platform",
+    "status": "in_progress"
+  }
 }
 ```
 
-<Info>
-Creating nodes doesn't count against your query limit. Only reads (recall, find_related) consume queries.
-</Info>
+## Creating nodes
 
-## Updating nodes
+Use [`hm_store`](/api-reference/memory-store):
 
-Nodes are mutable. Use `memory_update` to modify content or metadata:
-
-```
-memory_update(
-  node_id="node_xyz789",
-  content="The frontend team uses React 19 with TypeScript",
-  metadata={
-    "version": "19",
-    "updated_reason": "Migrated to React 19 in February"
-  }
-)
+```json
+{
+  "key": "initiative_phoenix",
+  "description": "API modernization for checkout service",
+  "data": {"squad": "platform", "phase": 2}
+}
 ```
 
-Updates are versioned — you can query what a node looked like at a specific point in time using temporal queries.
+After storing, the server triggers background enrichment — an LLM pass that expands the description, extracts structured data, creates new entities and edges, and updates the `user_profile`.
 
-## Deleting nodes
+## Updating and deleting
 
-Use `memory_forget` to delete a node:
-
-```
-memory_forget(
-  node_id="node_xyz789",
-  cascade=false
-)
-```
-
-The `cascade` option controls whether connected edges are also deleted:
-
-| cascade | Behavior |
-|---------|----------|
-| `false` (default) | Delete node only; orphan its edges |
-| `true` | Delete node and all connected edges |
-
-<Warning>
-Deletions are permanent. Consider using metadata like `status: "archived"` for soft deletes if you might need the information later.
-</Warning>
+- [`hm_update`](/api-reference/memory-update) modifies fields on an existing node. Re-embeds the vector on description changes.
+- [`hm_forget`](/api-reference/memory-forget) deletes a node with optional cascade of connected edges.
 
 ## Best practices
 
-### Write clear, complete content
+<Tip>
+**One idea per key** — If a node's `data` object grows past ~20 top-level keys, split satellite facts into new nodes and link them with relationships.
+</Tip>
 
-❌ **Bad:** `"Meeting notes"`
+<Tip>
+**Keys are API surface** — Treat them like stable IDs; they appear in `hm_find_related`, exports, and links.
+</Tip>
 
-✅ **Good:** `"Q3 planning meeting notes: Decided to prioritize API performance over new features. Sarah will lead the initiative."`
-
-### Use consistent metadata keys
-
-❌ **Bad:** `{"person": "Sarah"}`, `{"who": "Marcus"}`, `{"team_member": "Alex"}`
-
-✅ **Good:** `{"person": "Sarah"}`, `{"person": "Marcus"}`, `{"person": "Alex"}`
-
-### Include context in content
-
-Nodes should be understandable without requiring traversal of relationships:
-
-❌ **Bad:** `"She prefers Slack"`
-
-✅ **Good:** `"Sarah Chen prefers async communication via Slack"`
+<Warning>
+**Description vs data** — Put narrative prose in `description`, machine fields in `data`. The search pipeline runs BM25 and vector similarity against `description`, so keep it readable.
+</Warning>
 
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Edges & Hyperedges" icon="diagram-project" href="/concepts/edges-and-hyperedges">
-    Connect nodes with relationships
+  <Card title="Edges & hyperedges" icon="diagram-project" href="/concepts/edges-and-hyperedges">
+    How relationships are stored
   </Card>
-  <Card title="memory_store API" icon="code" href="/api-reference/memory-store">
-    Full API reference for creating nodes
+  <Card title="hm_store" icon="code" href="/api-reference/memory-store">
+    API reference
   </Card>
 </CardGroup>

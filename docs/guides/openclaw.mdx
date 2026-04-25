@@ -1,301 +1,51 @@
 ---
-title: OpenClaw Integration
-description: Complete guide to integrating HyperMemory with OpenClaw
+title: OpenClaw
+description: Add HyperMemory to OpenClaw agents
 ---
 
-# OpenClaw Integration
+# OpenClaw
 
-This guide covers integrating HyperMemory with OpenClaw, the open-source AI agent framework.
+OpenClaw supports MCP servers natively. Add HyperMemory to your agent's MCP configuration.
 
-## Prerequisites
-
-- OpenClaw installed and configured
-- A HyperMemory account ([sign up](https://app.hypermemory.io/signup))
-- A HyperMemory API key
-
-## Installation
-
-### Step 1: Configure MCP servers
-
-Add HyperMemory to your OpenClaw MCP configuration:
+## With OAuth
 
 ```json
 {
   "mcpServers": {
     "hypermemory": {
-      "type": "url",
+      "url": "https://api.hypermemory.io/mcp"
+    }
+  }
+}
+```
+
+OpenClaw handles the OAuth 2.1 + PKCE flow — you sign in with GitHub when prompted.
+
+## With API key
+
+```json
+{
+  "mcpServers": {
+    "hypermemory": {
       "url": "https://api.hypermemory.io/mcp",
       "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
+        "Authorization": "Bearer hm_YOUR_KEY_HERE"
       }
     }
   }
 }
 ```
 
-### Step 2: Set environment variable
+## Verify
 
-Store your API key securely:
+List available tools in your agent. You should see 11 `hm_*` tools. See [API Reference](/api-reference/overview) for the full list.
 
-```bash
-export HYPERMEMORY_API_KEY="your_api_key_here"
-```
+## Agent workflow
 
-Update your configuration to use the environment variable:
+A typical OpenClaw agent using HyperMemory:
 
-```json
-{
-  "mcpServers": {
-    "hypermemory": {
-      "type": "url",
-      "url": "https://api.hypermemory.io/mcp",
-      "headers": {
-        "Authorization": "Bearer ${HYPERMEMORY_API_KEY}"
-      }
-    }
-  }
-}
-```
-
-### Step 3: Verify connection
-
-Test the connection by listing available tools:
-
-```python
-from openclaw import Agent
-
-agent = Agent()
-tools = agent.list_mcp_tools()
-memory_tools = [t for t in tools if t.name.startswith('memory_')]
-print(f"Found {len(memory_tools)} memory tools")
-```
-
-Expected output: `Found 8 memory tools`
-
-## Basic usage
-
-### Store memories programmatically
-
-```python
-from openclaw import Agent
-
-agent = Agent()
-
-# Store a memory
-result = await agent.call_tool(
-    "memory_store",
-    {
-        "content": "Project Phoenix deadline is Q3 2026",
-        "node_type": "project",
-        "metadata": {
-            "project": "Phoenix",
-            "deadline": "Q3-2026"
-        }
-    }
-)
-
-print(f"Stored memory: {result['id']}")
-```
-
-### Recall memories
-
-```python
-# Query memories
-results = await agent.call_tool(
-    "memory_recall",
-    {
-        "query": "When is the Phoenix project deadline?",
-        "max_results": 5
-    }
-)
-
-for memory in results['results']:
-    print(f"- {memory['content']} (relevance: {memory['relevance']})")
-```
-
-### Find related memories
-
-```python
-# Find related nodes
-related = await agent.call_tool(
-    "memory_find_related",
-    {
-        "node_id": "node_abc123",
-        "depth": 2
-    }
-)
-
-for node in related['results']:
-    print(f"- {node['content']} (distance: {node['distance']})")
-```
-
-## Advanced patterns
-
-### Agent with persistent memory
-
-Create an agent that automatically uses memory:
-
-```python
-from openclaw import Agent, SystemPrompt
-
-system_prompt = SystemPrompt("""
-You are an assistant with persistent memory. 
-
-When the user shares information worth remembering:
-- Use memory_store to save it
-- Use appropriate node_types (person, project, decision, fact)
-- Add relevant metadata
-
-When the user asks about past information:
-- Use memory_recall to search your knowledge
-- Use memory_find_related to discover connections
-
-Always confirm when you've stored or retrieved memories.
-""")
-
-agent = Agent(system_prompt=system_prompt)
-```
-
-### Memory-augmented workflows
-
-```python
-from openclaw import Agent, Workflow
-
-class ResearchWorkflow(Workflow):
-    async def execute(self, topic):
-        # Check existing knowledge
-        existing = await self.agent.call_tool(
-            "memory_recall",
-            {"query": f"What do I know about {topic}?"}
-        )
-        
-        if existing['results']:
-            # Build on existing knowledge
-            context = "\n".join([r['content'] for r in existing['results']])
-        else:
-            context = "No prior knowledge"
-        
-        # Perform research
-        research_result = await self.agent.research(topic, context=context)
-        
-        # Store new findings
-        await self.agent.call_tool(
-            "memory_store",
-            {
-                "content": research_result.summary,
-                "node_type": "research",
-                "metadata": {"topic": topic}
-            }
-        )
-        
-        return research_result
-```
-
-### Multi-agent memory sharing
-
-```python
-from openclaw import Agent
-
-# Create agents sharing the same memory graph
-research_agent = Agent(
-    name="researcher",
-    mcp_config={"hypermemory": {...}}
-)
-
-writer_agent = Agent(
-    name="writer",
-    mcp_config={"hypermemory": {...}}  # Same API key = same graph
-)
-
-# Research agent stores findings
-await research_agent.call_tool(
-    "memory_store",
-    {"content": "Key finding: Market growing 15% YoY", "node_type": "research"}
-)
-
-# Writer agent retrieves them
-findings = await writer_agent.call_tool(
-    "memory_recall",
-    {"query": "market research findings"}
-)
-```
-
-## Error handling
-
-```python
-from openclaw import Agent, MCPError
-
-agent = Agent()
-
-try:
-    result = await agent.call_tool(
-        "memory_recall",
-        {"query": "project status"}
-    )
-except MCPError as e:
-    if e.code == "RATE_LIMITED":
-        print(f"Rate limited. Retry after {e.retry_after} seconds")
-    elif e.code == "UNAUTHORIZED":
-        print("Check your API key")
-    else:
-        print(f"Error: {e.message}")
-```
-
-## Troubleshooting
-
-### Tools not discovered
-
-**Symptoms:** `list_mcp_tools()` returns empty or missing memory tools
-
-**Solutions:**
-1. Verify the MCP server URL is correct
-2. Check API key is valid
-3. Restart the agent
-
-### Connection timeouts
-
-**Symptoms:** Operations hang or timeout
-
-**Solutions:**
-1. Check network connectivity
-2. Increase timeout settings:
-
-```python
-agent = Agent(
-    mcp_timeout=30  # seconds
-)
-```
-
-### Memory not persisting
-
-**Symptoms:** Stored memories aren't found on recall
-
-**Solutions:**
-1. Check the `memory_store` response for errors
-2. Verify you're using the same graph_id
-3. Wait a moment for indexing (usually instant)
-
-## Best practices
-
-<Tip>
-**Use consistent node types** across your agents to enable cross-agent queries.
-</Tip>
-
-<Info>
-**Batch related stores** when possible to create relationships atomically.
-</Info>
-
-<Warning>
-**Don't store sensitive data** like passwords or API keys in memories.
-</Warning>
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="CrewAI Integration" icon="users" href="/guides/crewai">
-    Multi-agent memory with CrewAI
-  </Card>
-  <Card title="API Reference" icon="code" href="/api-reference">
-    Full tool documentation
-  </Card>
-</CardGroup>
+1. **Start of conversation:** call `hm_get_overview` + `hm_recall` to load context
+2. **When new info appears:** call `hm_recall` to check for duplicates, then `hm_store`
+3. **Dense text:** call `hm_ingest` to decompose a large block of text into graph entities automatically
+4. **Build connections:** relationships are created automatically during `hm_store` and enrichment
+5. **End of conversation:** important context is already persisted for next time

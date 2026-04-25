@@ -1,253 +1,107 @@
 ---
-title: Claude Integration
-description: Complete guide to integrating HyperMemory with Claude
+title: Claude Desktop & Code
+description: Add HyperMemory to Claude Desktop and Claude Code
 ---
 
-# Claude Integration
+# Claude Desktop & Code
 
-This guide walks you through integrating HyperMemory with Claude Desktop for persistent memory across conversations.
+## Claude Desktop
 
-## Prerequisites
+### With OAuth (recommended)
 
-- Claude Desktop installed ([download](https://claude.ai/download))
-- A HyperMemory account ([sign up](https://app.hypermemory.io/signup))
-- A HyperMemory API key
-
-## Installation
-
-### Step 1: Locate your config file
-
-Find your Claude Desktop configuration file:
-
-| OS | Path |
-|-----|------|
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Linux | `~/.config/Claude/claude_desktop_config.json` |
-
-Create the file if it doesn't exist.
-
-### Step 2: Add HyperMemory
-
-Add HyperMemory to your MCP servers configuration:
+Add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "hypermemory": {
-      "type": "url",
+      "url": "https://api.hypermemory.io/mcp"
+    }
+  }
+}
+```
+
+Restart Claude Desktop. It will open a browser window for OAuth sign-in with GitHub (via Supabase OAuth 2.1 + PKCE).
+
+Config file location:
+
+| OS | Path |
+|---|---|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
+
+### With API key
+
+```json
+{
+  "mcpServers": {
+    "hypermemory": {
       "url": "https://api.hypermemory.io/mcp",
       "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
+        "Authorization": "Bearer hm_YOUR_KEY_HERE"
       }
     }
   }
 }
 ```
 
-Replace `YOUR_API_KEY` with your actual API key.
+Generate keys at **Dashboard > Settings > API Keys** at [app.hypermemory.io](https://app.hypermemory.io). Keys use the format `hm_` + 64 hex characters and are bound to a specific graph.
 
-### Step 3: Restart Claude Desktop
+### Self-hosted (stdio)
 
-Close and reopen Claude Desktop to load the new configuration.
-
-### Step 4: Verify the connection
-
-Ask Claude: "What memory tools do you have available?"
-
-Claude should list tools including `memory_store`, `memory_recall`, `memory_find_related`, etc.
-
-## Basic usage
-
-### Storing memories
-
-Ask Claude to remember something:
-
-```
-You: "Remember that our team standup is at 9 AM every Tuesday"
-
-Claude: I'll store that in memory.
-[Uses memory_store]
-Done! I've saved that your team standup is at 9 AM every Tuesday.
+```json
+{
+  "mcpServers": {
+    "hypergraph-memory": {
+      "command": "python3",
+      "args": ["/path/to/hypergraph_memory/src/server.py"],
+      "env": {
+        "HYPERGRAPH_MEMORY_FILE": "/path/to/memory.json"
+      }
+    }
+  }
+}
 ```
 
-### Recalling memories
+## Claude Code
 
-Ask Claude to recall information:
+### With OAuth
 
-```
-You: "When is our team standup?"
-
-Claude: Let me check my memory.
-[Uses memory_recall]
-Your team standup is at 9 AM every Tuesday.
+```bash
+claude mcp add hypermemory --transport http https://api.hypermemory.io/mcp
 ```
 
-### Finding related memories
+### With API key
 
-```
-You: "What do you know related to our team meetings?"
-
-Claude: [Uses memory_find_related]
-I found these related memories:
-- Team standup is at 9 AM every Tuesday
-- Sprint planning is biweekly on Wednesdays
-- Sarah usually facilitates the retrospectives
+```bash
+claude mcp add hypermemory \
+  --transport http \
+  --header "Authorization: Bearer hm_YOUR_KEY_HERE" \
+  https://api.hypermemory.io/mcp
 ```
 
-## Advanced patterns
+### Self-hosted (stdio)
 
-### Structuring memories with types
-
-Guide Claude to use consistent node types:
-
-```
-You: "When you store memories about people, use the type 'person'. 
-For meetings, use 'meeting'. For decisions, use 'decision'."
-
-Claude: Understood! I'll categorize memories consistently.
+```bash
+claude mcp add hypergraph-memory \
+  --transport stdio \
+  -- python3 /path/to/hypergraph_memory/src/server.py
 ```
 
-### Building relationships
+## Verify
 
-Ask Claude to connect related memories:
+Ask Claude: **"What memory tools do you have?"**
 
-```
-You: "Remember that Sarah leads the API project, and connect 
-this to what you know about Sarah."
+You should see 11 tools prefixed with `hm_` — `hm_store`, `hm_recall`, `hm_find_related`, `hm_get_overview`, `hm_ingest`, and more.
 
-Claude: [Uses memory_store with relationships]
-I've stored that Sarah leads the API project and connected it 
-to her existing profile in my memory.
-```
+<Info>
+If using the self-hosted server, you will see `memory_*` tools instead (e.g. `memory_store`, `memory_recall`). The self-hosted open-source server uses different tool names from the hosted service.
+</Info>
 
-### Time-scoped queries
+## Usage tips
 
-Ask Claude to filter by time:
-
-```
-You: "What do you remember from this week's discussions?"
-
-Claude: [Uses memory_recall with time_range]
-From this week, I remember:
-- Monday: Decision to prioritize API performance
-- Wednesday: Sarah proposed the caching solution
-- Today: We discussed the implementation timeline
-```
-
-## Prompting tips
-
-### Be explicit about memory
-
-Claude may not automatically use memory tools. Be explicit:
-
-✅ "Remember this for future conversations..."
-✅ "What do you recall about..."
-✅ "Save this to your memory..."
-✅ "Check your memory for..."
-
-### Provide context for storage
-
-Help Claude categorize effectively:
-
-```
-You: "Remember this as a decision: We chose PostgreSQL for the 
-new service because of its JSON support and team familiarity."
-```
-
-### Request relationships
-
-```
-You: "Remember that this decision is related to the database 
-migration project and involves Sarah and Marcus."
-```
-
-## Troubleshooting
-
-### Claude doesn't use memory tools
-
-**Symptoms:** Claude responds from context only, doesn't mention using memory tools
-
-**Solutions:**
-1. Verify tools are listed: "What MCP tools do you have?"
-2. Be explicit: "Use your memory_recall tool to check..."
-3. Restart Claude Desktop
-4. Check config file syntax (valid JSON)
-
-### "Unauthorized" errors
-
-**Symptoms:** Claude reports authentication errors
-
-**Solutions:**
-1. Verify API key is correct (no extra spaces)
-2. Check key hasn't been revoked
-3. Ensure format is `"Bearer YOUR_KEY"` (with space)
-
-### Slow responses
-
-**Symptoms:** Memory operations take several seconds
-
-**Solutions:**
-1. Check your network connection
-2. Reduce `max_results` for recall queries
-3. Use more specific queries
-
-### Inconsistent memory
-
-**Symptoms:** Claude remembers some things but not others
-
-**Solutions:**
-1. Check if memories were actually stored (ask Claude to list recent memories)
-2. Be more specific in recall queries
-3. Use node types to organize memories
-
-## Example conversation
-
-```
-You: "I want you to remember key information about our project. 
-Our project is called 'Phoenix' and it's a customer portal 
-redesign. The deadline is Q3 2026."
-
-Claude: I'll store this information.
-[Uses memory_store with node_type="project"]
-Done! I've saved:
-- Project name: Phoenix
-- Description: Customer portal redesign
-- Deadline: Q3 2026
-
-You: "Sarah Chen is the project lead and Marcus is the 
-backend developer."
-
-Claude: [Uses memory_store with relationships]
-I've added Sarah as project lead and Marcus as backend 
-developer, both connected to the Phoenix project.
-
-You: "A week later... What do you know about Project Phoenix?"
-
-Claude: [Uses memory_recall and memory_find_related]
-Here's what I know about Project Phoenix:
-- It's a customer portal redesign project
-- Deadline: Q3 2026
-- Sarah Chen is the project lead
-- Marcus is the backend developer
-```
-
-## Security considerations
-
-<Warning>
-- Never share your API key with others
-- Don't include sensitive data (passwords, secrets) in memories
-- Consider what information is appropriate for persistent storage
-- Review stored memories periodically
-</Warning>
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="API Reference" icon="code" href="/api-reference">
-    Full tool documentation
-  </Card>
-  <Card title="Core Concepts" icon="book" href="/concepts/hypergraph">
-    Understand how memories are structured
-  </Card>
-</CardGroup>
+- **Store:** "Remember that our deadline is March 31st" triggers `hm_store`
+- **Recall:** "What do you know about deadlines?" triggers `hm_recall`
+- **Ingest:** Paste a large block of text and ask Claude to ingest it — triggers `hm_ingest` to decompose it into graph entities in one LLM pass
+- Be explicit — Claude may not use memory tools unless prompted

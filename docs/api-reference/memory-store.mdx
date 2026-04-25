@@ -1,124 +1,58 @@
 ---
-title: memory_store
-description: Store a new memory node in the knowledge graph
+title: hm_store
+description: Create a node with automatic enrichment and entity detection
 ---
 
-# memory_store
+# hm_store
 
-Store a new memory node in the knowledge graph.
+Create a new node in the hypergraph. After storing, the server triggers **background enrichment** — an LLM pass that expands the description, extracts structured data, creates new entities and edges, and updates the `user_profile` singleton.
 
 ## Parameters
 
-<ParamField body="content" type="string" required>
-  The memory content to store. Should be a clear, complete statement that can be understood without context.
-</ParamField>
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `key` | `str` | **required** | Unique identifier for the node. Use `{type}_{name}` format. |
+| `description` | `str` | **required** | What this memory represents. Searched by BM25 and vector similarity. |
+| `node_type` | `str` | `None` | Type classification (e.g. `person`, `decision`, `concept`). |
+| `data` | `dict` | `{}` | Structured metadata (JSON key-value pairs). |
 
-<ParamField body="node_type" type="string">
-  Category of the memory node. You define your own types — common examples: `person`, `project`, `decision`, `fact`, `preference`, `event`.
-</ParamField>
+## Enrichment
 
-<ParamField body="metadata" type="object">
-  Additional key-value pairs for structured data. Keys should be strings; values can be strings, numbers, booleans, or arrays.
-</ParamField>
+After a successful store, the server runs a background enrichment pipeline that:
 
-<ParamField body="relationships" type="array">
-  Array of existing node IDs to create edges to. Creates undirected edges from the new node to each specified node.
-</ParamField>
+1. Expands the description with additional context
+2. Extracts structured data fields
+3. Auto-detects entities mentioned in the description and creates them as new nodes
+4. Creates relationship edges between the new node and detected entities
+5. Updates the `user_profile` singleton with relevant information
 
-<ParamField body="graph_id" type="string">
-  Target graph for the node. Defaults to your account's default graph.
-</ParamField>
+## Response
 
-## Example request
+Returns the created node key and confirmation. The enrichment pipeline runs asynchronously — enriched data appears on subsequent recall.
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_store",
-    "arguments": {
-      "content": "Sarah Chen is the tech lead for Project Phoenix",
-      "node_type": "assignment",
-      "metadata": {
-        "person": "Sarah Chen",
-        "project": "Phoenix",
-        "role": "tech_lead",
-        "start_date": "2026-01"
-      },
-      "relationships": ["node_sarah_abc123", "node_phoenix_def456"]
-    }
-  }
-}
-```
-
-## Example response
+## Example
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "id": "node_xyz789",
-    "status": "created",
-    "created_at": "2026-03-03T14:30:00Z",
-    "edges_created": 2
-  }
+  "key": "decision_jwt_auth",
+  "description": "We chose JWT over session cookies for stateless scaling",
+  "node_type": "decision",
+  "data": {"status": "approved", "date": "2026-04-01"}
 }
 ```
 
-## Response fields
+## CLI equivalent
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier for the created node |
-| `status` | string | Always `"created"` on success |
-| `created_at` | string | ISO 8601 timestamp |
-| `edges_created` | number | Count of edges created via `relationships` |
-
-## Errors
-
-| Code | Description |
-|------|-------------|
-| `INVALID_PARAMETER` | Missing `content` or invalid parameter type |
-| `NODE_NOT_FOUND` | A node ID in `relationships` doesn't exist |
-| `NODE_LIMIT_EXCEEDED` | Account has reached node limit |
-| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
-
-## Notes
-
-<Info>
-**Free operation** — Creating nodes doesn't count against your query limit.
-</Info>
-
-<Tip>
-**Write complete content** — Nodes should be understandable without relationships. Instead of "She prefers Slack", write "Sarah Chen prefers async communication via Slack".
-</Tip>
-
-<Warning>
-**Avoid duplicates** — `memory_store` always creates a new node. Check for existing memories with `memory_recall` first if you want to update instead.
-</Warning>
-
-## Hyperedges
-
-To create a hyperedge (multi-way relationship), include the `hyperedge` parameter:
-
-```json
-{
-  "arguments": {
-    "content": "Q3 planning decision",
-    "node_type": "decision",
-    "hyperedge": {
-      "nodes": ["node_sarah", "node_marcus", "node_phoenix", "node_q3"],
-      "edge_type": "decision_context"
-    }
-  }
-}
+```bash
+hm store decision_jwt_auth "We chose JWT over session cookies" --type decision
 ```
 
-This creates a new node AND a hyperedge connecting it with all specified nodes.
+## REST endpoint
 
-## Idempotency
+```
+POST /api/v1/memory/store
+```
 
-`memory_store` is not idempotent — calling it twice with identical arguments creates two separate nodes. If you need idempotent behavior, implement client-side deduplication using content hashing.
+## Self-hosted equivalent
+
+The open-source server's `memory_store` tool accepts the same core fields plus `assets`, `relationships`, `source_uri`, and `force_extra_data`. It does not run background enrichment.

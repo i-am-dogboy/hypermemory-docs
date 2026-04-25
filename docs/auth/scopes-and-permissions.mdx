@@ -1,199 +1,49 @@
 ---
-title: Scopes & Permissions
-description: Understanding API key scopes and what each allows
+title: Scopes & permissions
+description: How access control works on the hosted service
 ---
 
-# Scopes & Permissions
+# Scopes & permissions
 
-Scopes define what operations an API key can perform. Using the right scopes improves security by limiting potential damage from compromised keys.
+## API key scopes
 
-## Available scopes
+When you create an API key, you select a scope that determines the key's access level:
+
+| Scope | Access | Use case |
+|---|---|---|
+| `owner` | Read + write | Personal keys, full agent access |
+| `member` | Read-only | Organization keys, shared read access |
+
+Default for personal keys: **`owner`**.
+
+## OAuth scopes
+
+The OAuth 2.1 flow advertises three scopes:
 
 | Scope | Description |
-|-------|-------------|
-| `memory:read` | Query and retrieve memories |
-| `memory:write` | Create, update, and delete memories |
-| `memory:admin` | Graph management, export/import operations |
-
-## Scope details
-
-### memory:read
-
-Allows reading data from your memory graphs.
-
-**Permitted operations:**
-
-| Tool | Description |
-|------|-------------|
-| `memory_recall` | Query memories by natural language |
-| `memory_find_related` | Find related nodes |
-| `memory_get_relationships` | Get edges for a node |
-
-**Example use cases:**
-- Read-only dashboards
-- Reporting tools
-- Search interfaces
-
-### memory:write
-
-Allows modifying data in your memory graphs. Includes all `memory:read` permissions.
-
-**Permitted operations:**
-
-| Tool | Description |
-|------|-------------|
-| All `memory:read` operations | — |
-| `memory_store` | Create new nodes |
-| `memory_update` | Modify existing nodes |
-| `memory_forget` | Delete nodes |
-
-**Example use cases:**
-- AI agents that store and recall
-- Applications that maintain user state
-- Integration pipelines
-
-### memory:admin
-
-Allows administrative operations. Includes all `memory:read` and `memory:write` permissions.
-
-**Permitted operations:**
-
-| Tool | Description |
-|------|-------------|
-| All `memory:read` operations | — |
-| All `memory:write` operations | — |
-| `memory_export_subgraph` | Export graph portions |
-| `memory_load_link` | Import subgraphs |
-| `memory_create_graph` | Create new graphs |
-| `memory_delete_graph` | Delete graphs |
-| `memory_list_graphs` | List available graphs |
-
-**Example use cases:**
-- Migration tools
-- Backup systems
-- Multi-tenant administration
-
-## Assigning scopes
-
-### When creating a key
-
-1. Navigate to **Settings** → **API Keys**
-2. Click **Create New Key**
-3. Select the scopes you need
-4. Click **Create**
-
-### Modifying existing keys
-
-<Warning>
-You cannot add scopes to an existing key. Create a new key with the desired scopes and revoke the old one.
-</Warning>
-
-## Scope combinations
-
-### Recommended configurations
-
-| Use Case | Scopes |
-|----------|--------|
-| Read-only agent | `memory:read` |
-| Full agent | `memory:read`, `memory:write` |
-| Development/testing | `memory:read`, `memory:write` |
-| Admin tools | `memory:read`, `memory:write`, `memory:admin` |
-| Backup service | `memory:read`, `memory:admin` |
-
-### Least privilege principle
-
-Always grant the minimum scopes necessary:
-
-```
-✅ Agent that only recalls → memory:read
-✅ Agent that stores and recalls → memory:read + memory:write
-❌ Agent that only recalls → memory:read + memory:write + memory:admin
-```
-
-## Permission errors
-
-When a key lacks required scope, you get a 403 Forbidden error:
-
-```json
-{
-  "error": {
-    "code": "FORBIDDEN",
-    "message": "API key lacks required scope: memory:write",
-    "required_scope": "memory:write",
-    "key_scopes": ["memory:read"]
-  }
-}
-```
-
-### Troubleshooting
-
-1. Check the error message for the required scope
-2. Verify your key's scopes in the dashboard
-3. Create a new key with the needed scope if necessary
-
-## Scope matrix
-
-Complete mapping of tools to required scopes:
-
-| Tool | memory:read | memory:write | memory:admin |
-|------|:-----------:|:------------:|:------------:|
-| `memory_recall` | ✅ | ✅ | ✅ |
-| `memory_find_related` | ✅ | ✅ | ✅ |
-| `memory_get_relationships` | ✅ | ✅ | ✅ |
-| `memory_store` | — | ✅ | ✅ |
-| `memory_update` | — | ✅ | ✅ |
-| `memory_forget` | — | ✅ | ✅ |
-| `memory_export_subgraph` | — | — | ✅ |
-| `memory_load_link` | — | — | ✅ |
-| `memory_create_graph` | — | — | ✅ |
-| `memory_delete_graph` | — | — | ✅ |
-| `memory_list_graphs` | — | — | ✅ |
-
-## Best practices
-
-<Tip>
-**Create separate keys for different purposes.** A production agent and a backup system should use different keys with different scopes.
-</Tip>
+|---|---|
+| `memory:read` | Read nodes, edges, and graph state |
+| `memory:write` | Create and update nodes and edges |
+| `memory:admin` | Full access including administrative operations |
 
 <Info>
-**Review scopes periodically.** As your application evolves, some keys may have more permissions than needed.
+Scope enforcement on the hosted service is primarily through **plan limits and rate limits**, not per-scope-string gating. All authenticated users have access to the tools their plan allows.
 </Info>
 
-<Warning>
-**Never use admin-scoped keys in client-side code.** Admin keys should only be used in secure, server-side environments.
-</Warning>
+## Plan-based enforcement
 
-## Security implications
+Access to certain features depends on your plan tier:
 
-### If a read-only key is compromised
+| Feature | Free | Basic | Pro | Business | Enterprise |
+|---|---|---|---|---|---|
+| File upload (`hm_upload_file`) | No | No | Yes | Yes | Yes |
+| Multiple graphs | 1 | 1 | 4 | 20 | Unlimited |
+| Write rate limit (per min) | 10 | 30 | 100 | 200 | 300 |
+| Read rate limit (per min) | 30 | 60 | 200 | 400 | 600 |
+| Ingest rate limit (per min) | 3 | 5 | 20 | 40 | 60 |
 
-- Attacker can read all memories in your graph
-- Cannot modify or delete data
-- **Impact:** Data exposure
-- **Response:** Revoke key, audit what was accessed
+See [Plans](/billing/plans) for the complete tier comparison.
 
-### If a write key is compromised
+## Self-hosted
 
-- Attacker can read all memories
-- Can create, modify, and delete nodes
-- **Impact:** Data exposure + data tampering
-- **Response:** Revoke key, audit changes, restore from backup if needed
-
-### If an admin key is compromised
-
-- Full access to all operations
-- Can export entire graph
-- Can delete graphs
-- **Impact:** Full data breach potential
-- **Response:** Emergency revocation, full audit, consider data reset
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="API Keys" icon="key" href="/auth/api-keys">
-    Create and use API keys
-  </Card>
-  <Card title="Managing Keys" icon="rotate" href="/auth/managing-keys">
-    Rotate and revoke keys
-  </Card>
-</CardGroup>
+The open-source server does not enforce scopes or plan limits — all tools are available to any caller.

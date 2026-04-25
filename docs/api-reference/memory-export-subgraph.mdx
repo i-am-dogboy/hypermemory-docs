@@ -1,220 +1,78 @@
 ---
-title: memory_export_subgraph
-description: Export a portion of the graph for backup or sharing
+title: hm_timeline & hm_timeline_write
+description: Temporal recall and explicit diary entries
 ---
 
-# memory_export_subgraph
+# hm_timeline
 
-Export a portion of the knowledge graph as a portable JSON structure. Use for backups, sharing between agents, or migrating data.
+Search the timeline for past events, decisions, and activity. The timeline is backed by a separate PostgreSQL database with full-text search (tsvector).
 
 ## Parameters
 
-<ParamField body="node_ids" type="array">
-  Specific node IDs to export. The export includes these nodes and all edges between them.
-</ParamField>
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `query` | `str \| None` | `None` | Full-text search query |
+| `period` | `str \| None` | `None` | Time period filter (e.g. "last week", "this month") |
+| `date_range` | `object \| None` | `None` | Specific start/end date range |
+| `node_key` | `str \| None` | `None` | Filter entries related to a specific node |
 
-<ParamField body="root_node_id" type="string">
-  Starting node for graph traversal. Exports this node and all nodes reachable within `depth` hops.
-</ParamField>
+## How the timeline works
 
-<ParamField body="depth" type="number">
-  When using `root_node_id`, how many hops to traverse. Default: 2. Maximum: 5.
-</ParamField>
-
-<ParamField body="include_edges" type="boolean">
-  Whether to include edges and hyperedges. Default: `true`.
-</ParamField>
-
-<ParamField body="graph_id" type="string">
-  Source graph. Defaults to your account's default graph.
-</ParamField>
-
-<Note>
-Provide either `node_ids` OR `root_node_id`, not both.
-</Note>
-
-## Example request (specific nodes)
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_export_subgraph",
-    "arguments": {
-      "node_ids": ["node_abc123", "node_def456", "node_ghi789"],
-      "include_edges": true
-    }
-  }
-}
-```
-
-## Example request (traversal)
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "memory_export_subgraph",
-    "arguments": {
-      "root_node_id": "node_sarah_abc123",
-      "depth": 2
-    }
-  }
-}
-```
-
-## Example response
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "export_id": "exp_xyz789",
-    "exported_at": "2026-03-15T14:30:00Z",
-    "source_graph": "default",
-    "nodes": [
-      {
-        "id": "node_abc123",
-        "content": "Sarah Chen, Backend Tech Lead",
-        "node_type": "person",
-        "metadata": {"team": "backend", "level": "senior"},
-        "created_at": "2026-01-15T10:00:00Z",
-        "updated_at": "2026-02-20T14:00:00Z"
-      },
-      {
-        "id": "node_def456",
-        "content": "Project Phoenix: API modernization",
-        "node_type": "project",
-        "metadata": {"status": "active"},
-        "created_at": "2026-01-20T09:00:00Z",
-        "updated_at": "2026-01-20T09:00:00Z"
-      }
-    ],
-    "edges": [
-      {
-        "id": "edge_uvw123",
-        "edge_type": "manages",
-        "directed": true,
-        "source": "node_abc123",
-        "target": "node_def456",
-        "metadata": {"since": "2026-01"},
-        "created_at": "2026-01-20T09:00:00Z"
-      }
-    ],
-    "hyperedges": [
-      {
-        "id": "hedge_qrs456",
-        "edge_type": "decision_context",
-        "content": "Tech stack decision",
-        "nodes": ["node_abc123", "node_def456", "node_ghi789"],
-        "metadata": {"outcome": "PostgreSQL"},
-        "created_at": "2026-02-01T15:00:00Z"
-      }
-    ],
-    "stats": {
-      "total_nodes": 2,
-      "total_edges": 1,
-      "total_hyperedges": 1
-    }
-  }
-}
-```
-
-## Response fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `export_id` | string | Unique identifier for this export |
-| `exported_at` | string | Export timestamp |
-| `source_graph` | string | Graph the data came from |
-| `nodes` | array | Exported nodes with full data |
-| `edges` | array | Binary edges between exported nodes |
-| `hyperedges` | array | Hyperedges involving exported nodes |
-| `stats` | object | Summary counts |
-
-## Errors
-
-| Code | Description |
-|------|-------------|
-| `INVALID_PARAMETER` | Invalid combination of parameters |
-| `NODE_NOT_FOUND` | Specified node doesn't exist |
-| `EXPORT_TOO_LARGE` | Export exceeds size limit (10MB) |
-| `GRAPH_NOT_FOUND` | Specified `graph_id` doesn't exist |
-| `QUOTA_EXCEEDED` | Monthly query limit reached |
-
-## Notes
+The timeline is **auto-logged** — meaningful tool calls (`hm_store`, `hm_update`, `hm_forget`, `hm_ingest`) automatically produce human-readable diary entries. Bootstrap tools (`hm_get_overview`, `hm_list_files`, etc.) are skipped to avoid noise.
 
 <Info>
-**Query cost** — Each `memory_export_subgraph` call counts as 1 query.
+The timeline is **not loaded automatically** during `hm_recall`. It is only returned on explicit request via `hm_timeline`. This keeps graph search fast and focused.
 </Info>
 
-<Info>
-**Requires admin scope** — This operation requires `memory:admin` scope.
-</Info>
-
-### Export size limits
-
-| Plan | Max export size |
-|------|-----------------|
-| Free | 1 MB |
-| Developer | 10 MB |
-| Pro | 50 MB |
-| Enterprise | Custom |
-
-### Use cases
-
-**Backup specific knowledge:**
-```json
-{
-  "root_node_id": "node_project_alpha",
-  "depth": 3
-}
-```
-
-**Share knowledge with another agent:**
-```json
-{
-  "node_ids": ["node_a", "node_b", "node_c"],
-  "include_edges": true
-}
-```
-
-**Archive before deletion:**
-```json
-{
-  "node_ids": ["node_to_delete"],
-  "depth": 1
-}
-```
-
-### Edges in exports
-
-Only edges where **both** endpoints are in the export are included:
-
-```
-Exported: [A, B, C]
-A ─── B  ✅ Included (both nodes exported)
-B ─── C  ✅ Included
-A ─── D  ❌ Not included (D not exported)
-```
-
-### Importing exports
-
-Use `memory_load_link` to import exported data:
+## Example
 
 ```json
 {
-  "name": "memory_load_link",
-  "arguments": {
-    "data": {/* exported subgraph */},
-    "graph_id": "target_graph"
-  }
+  "query": "API migration decisions",
+  "period": "last month"
 }
 ```
 
-See [memory_load_link](/api-reference/memory-load-link) for import options.
+## CLI equivalent
+
+```bash
+hm timeline --query "API migration decisions"
+```
+
+## REST endpoint
+
+```
+POST /api/v1/memory/timeline
+```
+
+---
+
+# hm_timeline_write
+
+Write an explicit diary entry to the timeline. Use this for decisions, milestones, or events that should be recorded outside of normal tool usage.
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `entry` | `str` | **required** | The diary entry text |
+
+## Example
+
+```json
+{
+  "entry": "Decided to migrate from REST to GraphQL for the public API. Approved by Sarah and Marcus."
+}
+```
+
+## CLI equivalent
+
+```bash
+hm timeline-write "Decided to migrate from REST to GraphQL for the public API"
+```
+
+## REST endpoint
+
+```
+POST /api/v1/memory/timeline/write
+```

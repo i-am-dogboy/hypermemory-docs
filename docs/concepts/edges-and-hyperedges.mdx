@@ -1,204 +1,102 @@
 ---
 title: Edges & Hyperedges
-description: Understanding relationships between memory nodes
+description: How relationships are stored in HyperMemory
 ---
 
-# Edges & Hyperedges
+# Edges & hyperedges
 
-Relationships are what transform isolated facts into connected knowledge. HyperMemory supports two types: edges (binary) and hyperedges (multi-way).
+## Edges
 
-## Edges (binary relationships)
+In the hosted HyperMemory service, an **edge** (`relates_to` record in SurrealDB) is a directed binary relationship between two nodes with:
 
-An edge connects exactly two nodes. It can be directed (A → B) or undirected (A ↔ B).
+| Field | Description |
+|---|---|
+| `relationship` | A natural-language label describing the connection |
+| `data` | Optional JSON metadata (weights, status, timestamps) |
 
-### Edge structure
+Edges are canonicalized by the server — relationship labels are normalized for consistency.
 
-```json
-{
-  "id": "edge_xyz789",
-  "source": "node_abc123",
-  "target": "node_def456",
-  "edge_type": "manages",
-  "directed": true,
-  "metadata": {
-    "since": "2026-01",
-    "role": "tech_lead"
-  },
-  "created_at": "2026-01-20T09:00:00Z"
-}
-```
-
-### Common edge types
-
-| Type | Example | Direction |
-|------|---------|-----------|
-| `manages` | Sarah manages Project Alpha | Directed |
-| `depends_on` | Feature B depends on Feature A | Directed |
-| `collaborates_with` | Alice collaborates with Bob | Undirected |
-| `belongs_to` | Task belongs to Sprint | Directed |
-| `related_to` | Concept A related to Concept B | Undirected |
-| `prefers` | User prefers Option | Directed |
-
-### Creating edges
-
-Edges are created automatically when you use the `relationships` parameter in `memory_store`:
-
-```
-memory_store(
-  content="Sarah Chen is the tech lead for Project Alpha",
-  node_type="assignment",
-  relationships=["node_project_alpha"]
-)
-```
-
-Or explicitly via the API:
-
-```
-memory_create_edge(
-  source="node_sarah",
-  target="node_project_alpha",
-  edge_type="manages",
-  directed=true
-)
-```
-
-## Hyperedges (multi-way relationships)
-
-A hyperedge connects three or more nodes in a single relationship. This is HyperMemory's distinguishing feature.
-
-### Hyperedge structure
+### Example edge
 
 ```json
 {
-  "id": "hedge_qrs101",
-  "nodes": [
-    "node_sarah",
-    "node_marcus",
-    "node_api_v2",
-    "node_q3_planning"
-  ],
-  "edge_type": "decision_context",
-  "content": "Q3 roadmap planning decision",
-  "metadata": {
-    "date": "2026-02-01",
-    "outcome": "approved",
-    "confidence": "high"
-  },
-  "created_at": "2026-02-01T15:00:00Z"
+  "from": "person_sarah",
+  "to": "project_phoenix",
+  "relationship": "Sarah is the technical lead for Project Phoenix",
+  "data": {"since": "2026-01"}
 }
 ```
 
-### When to use hyperedges
+## Hyperedges
 
-| Scenario | Why hyperedge? |
-|----------|---------------|
-| Decision with multiple stakeholders | Captures who decided, what was decided, and context together |
-| Meeting with multiple participants | All attendees connected atomically |
-| Event affecting multiple projects | Single relationship vs. N² binary edges |
-| Complex dependency | Multiple components with shared constraint |
+A **hyperedge** connects three or more nodes in a single relationship. In the hosted service, this is implemented as a `hyperedge` record with `participates_in` links to each member node.
 
-### Creating hyperedges
+### Example hyperedge
 
-```
-memory_store(
-  content="Sprint 12 planning session determined Q3 priorities",
-  node_type="event",
-  hyperedge={
-    "nodes": ["node_sprint_12", "node_sarah", "node_marcus", "node_api_project"],
-    "edge_type": "planning_session"
-  }
-)
+```json
+{
+  "nodes": ["person_sarah", "person_marcus", "project_phoenix", "event_q3_planning"],
+  "relationship": "Sarah and Marcus presented the Phoenix roadmap at Q3 planning"
+}
 ```
 
-## When to use which
+## In the open-source server
 
-### Use edges when:
+The self-hosted server uses a unified `Edge` model where:
 
-- The relationship is between exactly two things
-- Direction matters (A manages B, not B manages A)
-- You want simple, queryable connections
-- Relationships are independent of each other
+- `nodes` is a list of string keys (length >= 2)
+- `relationship` is a natural-language label
+- `data` is optional JSON metadata
 
-### Use hyperedges when:
+A binary edge has two keys. A hyperedge has three or more — there is no separate wire format.
 
-- Three or more things are connected in one context
-- The relationship only makes sense with all participants
-- You want to avoid creating N² binary edges
-- The context is atomic (all-or-nothing)
-
-## Example: Modeling a decision
-
-**Scenario:** Sarah and Marcus decided to use PostgreSQL for the new API during Q3 planning.
-
-### Binary edges approach
-
-```
-Sarah ──participated_in──► Decision
-Marcus ──participated_in──► Decision
-Decision ──concerns──► PostgreSQL
-Decision ──concerns──► New API
-Decision ──occurred_during──► Q3 Planning
+```json
+{
+  "nodes": ["person_sarah", "project_phoenix"],
+  "relationship": "Sarah is the technical lead for Project Phoenix",
+  "data": {"since": "2026-01"}
+}
 ```
 
-5 edges. To understand the full decision, your agent traverses all of them.
+## How relationships are created
 
-### Hyperedge approach
+**At store time** — the `hm_store` tool triggers background enrichment that automatically detects entities and creates relationships.
 
-```
-[Sarah, Marcus, PostgreSQL, New API, Q3 Planning]
-                    ↑
-            decision_context
-           "Chose PostgreSQL for new API"
-```
+**Explicitly** — use the REST API endpoint `POST /api/v1/memory/relationships` to create edges between existing nodes.
 
-1 hyperedge. The full context is retrieved atomically.
+**Via update** — use `hm_update` to modify relationships on a node.
+
+**Via ingest** — `hm_ingest` decomposes dense text into entities and their relationships in one LLM pass.
+
+## When to use 2 vs N nodes
+
+| Situation | Pattern |
+|----------|---------|
+| Two actors only | Binary edge (2 nodes) |
+| A decision, several stakeholders, a milestone | Hyperedge (N nodes in one relationship) |
+| Soft tag between two things | Binary edge with a specific relationship label |
+
+<Warning>
+**Over-hyperedging** — If removing one participant no longer changes the meaning of the relationship, you may not need a large hyperedge. Smaller edges can be easier to search and update.
+</Warning>
 
 ## Querying relationships
 
-### Find relationships for a node
-
-```
-memory_get_relationships(
-  node_id="node_sarah",
-  direction="both"
-)
-```
-
-Returns both edges and hyperedges involving Sarah.
-
-### Find related nodes
-
-```
-memory_find_related(
-  node_id="node_sarah",
-  depth=2,
-  edge_type="decision_context"
-)
-```
-
-Traverses up to 2 hops, filtering by relationship type.
-
-## Best practices
-
-<Tip>
-**Start simple.** Use binary edges for straightforward relationships. Only create hyperedges when you recognize that multiple concepts genuinely belong together.
-</Tip>
-
-<Warning>
-**Avoid over-connecting.** Not everything needs to be related. Focus on meaningful relationships that help your agent reason about knowledge.
-</Warning>
+- **Hybrid search**: [`hm_recall`](/api-reference/memory-recall) searches node descriptions, edge labels, and data fields using BM25, vector similarity, and regex.
+- **Graph traversal**: [`hm_find_related`](/api-reference/memory-find-related) walks from a starting node with configurable traversal strategies (chain, decay, type-boosted).
+- **REST endpoint**: `GET /api/v1/memory/relationships/{key}` lists edges connected to a specific node.
 
 <Info>
-**Type consistently.** Use a consistent vocabulary for edge types across your graph: `manages`, `depends_on`, `participates_in` — not `management`, `dependency`, `participant`.
+**Direction** — In the open-source server, the `Edge` model is undirected membership with no separate source/target. If you need direction, encode it in the label ("A approves B") or in `data`. The hosted service uses directed `relates_to` records.
 </Info>
 
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Memory Graphs" icon="diagram-project" href="/concepts/memory-graphs">
-    Organize knowledge into separate graphs
+  <Card title="Nodes" icon="database" href="/concepts/nodes">
+    Keys, descriptions, data
   </Card>
-  <Card title="memory_find_related API" icon="code" href="/api-reference/memory-find-related">
-    Query relationships programmatically
+  <Card title="Linked hypergraphs" icon="link" href="/concepts/linked-hypergraphs">
+    Multiple memory files and namespaces
   </Card>
 </CardGroup>

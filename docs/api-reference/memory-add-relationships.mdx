@@ -1,0 +1,63 @@
+---
+title: hm_ingest
+description: Decompose dense text into graph entities in one LLM pass
+---
+
+# hm_ingest
+
+Decompose a block of dense text into individual graph entities (nodes and relationships) in a single LLM pass. This is the most efficient way to import unstructured content into the knowledge graph.
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `text` | `str` | **required** | The dense text to decompose |
+| `context` | `str \| None` | `None` | Optional label or context for the ingestion |
+
+## How it works
+
+1. The text is sent to an LLM that identifies distinct entities, facts, and relationships
+2. Each entity is created as a node with an appropriate type and description
+3. Relationships between entities are created as edges
+4. The `user_profile` is updated if relevant information is detected
+
+This is fundamentally different from `hm_store` which creates a single node — `hm_ingest` can create many nodes and edges from one input.
+
+## Rate limiting
+
+`hm_ingest` has its own rate limit category, separate from read and write operations:
+
+| Plan | Ingest RPM |
+|---|---|
+| Free | 3 |
+| Basic | 5 |
+| Pro | 20 |
+| Business | 40 |
+| Enterprise | 60 |
+
+## Example
+
+```json
+{
+  "text": "Sarah Chen joined as CTO in January 2026. She leads the platform team which is building the new checkout API using Redis for caching and PostgreSQL for persistence. The project deadline is Q3 2026.",
+  "context": "Team update notes"
+}
+```
+
+This single call might create nodes for `person_sarah_chen`, `component_checkout_api`, `tech_redis`, `tech_postgresql`, and edges connecting them.
+
+## CLI equivalent
+
+```bash
+hm ingest "Sarah Chen joined as CTO in January 2026..." --context "Team update notes"
+```
+
+## REST endpoint
+
+```
+POST /api/v1/memory/ingest
+```
+
+## Self-hosted
+
+The open-source server does not include `hm_ingest`. Use `memory_store` with individual nodes and `memory_add_relationships` to build the graph manually.
