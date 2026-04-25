@@ -5,9 +5,9 @@ description: Use HyperMemory as persistent memory for CrewAI agents
 
 # CrewAI
 
-CrewAI agents can use HyperMemory through MCP. The pattern: connect to the hosted MCP server (or run self-hosted), then call tools via an MCP client in your CrewAI tool wrappers.
+CrewAI agents can use HyperMemory through MCP. Connect to the hosted MCP server and call tools via an MCP client in your CrewAI tool wrappers.
 
-## Option 1: Hosted (API key)
+## Setup
 
 Set your API key:
 
@@ -15,7 +15,9 @@ Set your API key:
 export HYPERMEMORY_API_KEY=hm_YOUR_KEY_HERE
 ```
 
-Create tool wrappers that call the hosted MCP endpoint:
+Generate API keys at [app.hypermemory.io](https://app.hypermemory.io) under **API Keys** in the main navigation.
+
+Create tool wrappers that call the HyperMemory MCP endpoint:
 
 ```python
 import os
@@ -43,10 +45,6 @@ def call_mcp(tool_name: str, arguments: dict) -> dict:
 ```
 
 Then wrap `call_mcp` as a CrewAI `BaseTool` and attach it to your agents.
-
-## Option 2: Self-hosted (stdio)
-
-If running from the [open-source repo](/connect/self-hosted), start `python src/server.py` as a sidecar process or use the HTTP wrapper at `deploy/mcp-server/mcp_http_server.py`, then point your `call_mcp` function at `http://localhost:8080`.
 
 ## Key tools for agents
 

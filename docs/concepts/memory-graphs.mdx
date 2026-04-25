@@ -1,0 +1,52 @@
+---
+title: Memory graphs
+description: Multiple isolated knowledge bases per account
+---
+
+# Memory graphs
+
+Each user account on HyperMemory can have multiple **memory graphs** — separate, isolated knowledge bases. Nodes in one graph do not connect to nodes in another.
+
+## Graph limits by plan
+
+| Plan | Graphs |
+|---|---|
+| Free | 1 |
+| Basic | 1 |
+| Pro | 4 |
+| Business | 20 |
+| Enterprise | Unlimited |
+| RunStack | 1 |
+
+## When to use multiple graphs
+
+- **Separate projects or domains** — keep work knowledge separate from personal notes
+- **Different agents** — give each agent its own knowledge base
+- **Client isolation** — if building a platform on top of HyperMemory
+
+## Operations
+
+- **Create** a new graph
+- **List** all graphs
+- **Rename** a graph
+- **Delete** a graph (cascading: removes all SurrealDB data, Qdrant vectors, Redis state, and associated API keys)
+- **Set default** graph
+
+## Active graph
+
+The dashboard uses the `X-Graph-Id` header to select the active graph. API keys are bound to a specific graph at creation time — when you create an API key, you select which graph it has access to.
+
+## Frozen graphs
+
+On plan downgrade, excess graphs become **read-only** (frozen). Upgrade your plan to unfreeze them.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Temporal memory" icon="clock" href="/concepts/temporal-memory">
+    Time-aware nodes and timeline
+  </Card>
+  <Card title="Plans" icon="credit-card" href="/billing/plans">
+    Graph limits by plan tier
+  </Card>
+</CardGroup>

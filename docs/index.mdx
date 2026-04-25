@@ -5,7 +5,7 @@ description: Long-term memory for AI agents — store, recall, and connect knowl
 
 # HyperMemory
 
-HyperMemory is a persistent knowledge graph memory system for AI agents. Agents store facts, decisions, preferences, and relationships as nodes and hyperedges in a [hypergraph](https://github.com/RunStack-AI/hypergraph_memory), then recall them through hybrid search (BM25, vector similarity, regex) or graph traversal. Memory persists across conversations.
+HyperMemory is a persistent knowledge graph memory system for AI agents. Agents store facts, decisions, preferences, and relationships as nodes and hyperedges in a hypergraph, then recall them through hybrid search (BM25, vector similarity, regex) or graph traversal. Memory persists across conversations.
 
 The hosted server at `api.hypermemory.io` exposes **11 MCP tools** (`hm_store`, `hm_recall`, `hm_find_related`, `hm_ingest`, …) over Streamable HTTP that any MCP-compatible client can call. A REST API is also available for non-MCP integrations.
 
@@ -13,17 +13,15 @@ The hosted server at `api.hypermemory.io` exposes **11 MCP tools** (`hm_store`, 
 
 <CardGroup cols={3}>
   <Card title="MCP with OAuth" icon="shield-check" href="/connect/mcp-oauth">
-    Point your MCP client at the hosted server. Authenticate via OAuth 2.1 with GitHub. Works with Claude Desktop, Claude Code, Cursor, Windsurf, OpenClaw, n8n.
+    Paste the server URL into your MCP client. Authenticate via OAuth 2.1 with GitHub. Works with Claude Desktop, Claude Code, Cursor, Windsurf, OpenClaw, n8n.
+  </Card>
+  <Card title="CLI with API key" icon="terminal" href="/connect/cli">
+    Install the `hm` CLI from PyPI. Authenticate with an API key or `hm login`. Pipe-friendly JSON output.
   </Card>
   <Card title="MCP with API key" icon="key" href="/connect/mcp-api-key">
     Generate an API key at app.hypermemory.io and pass it as a Bearer token. For programmatic and server-side use.
   </Card>
-  <Card title="CLI" icon="terminal" href="/connect/cli">
-    Install the `hm` CLI from PyPI. Authenticate with `hm login` or an API key. Pipe-friendly JSON output.
-  </Card>
 </CardGroup>
-
-You can also [self-host](/connect/self-hosted) the open-source server from the repository with no account required.
 
 ## Quick links
 
@@ -34,10 +32,10 @@ You can also [self-host](/connect/self-hosted) the open-source server from the r
   <Card title="API Reference" icon="code" href="/api-reference/overview">
     All 11 MCP tools
   </Card>
-  <Card title="Integration Guides" icon="plug" href="/guides/claude">
-    Claude, OpenClaw, CrewAI, n8n, OpenAI
+  <Card title="Integration Guides" icon="plug" href="/guides/claude-desktop">
+    Claude Desktop, Claude Code, OpenClaw, CrewAI, n8n, OpenAI
   </Card>
   <Card title="Concepts" icon="diagram-project" href="/concepts/hypergraph">
-    Nodes, edges, hyperedges, linked graphs
+    Nodes, edges, hyperedges, memory graphs
   </Card>
 </CardGroup>

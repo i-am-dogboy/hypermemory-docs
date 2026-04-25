@@ -15,7 +15,7 @@ Find nodes connected to a given node by traversing hyperedge relationships. Supp
 
 ## Traversal strategies
 
-The hosted service supports three traversal strategies:
+The server supports three traversal strategies:
 
 | Strategy | Description |
 |---|---|
@@ -46,7 +46,3 @@ hm find person_alice --depth 2
 ```
 POST /api/v1/memory/find-related
 ```
-
-## Self-hosted equivalent
-
-The open-source server's `memory_find_related` accepts `key`, `relationship_pattern` (regex filter on edge labels), `max_depth` (1–5, default 2), and `max_nodes` (1–100, default 30).

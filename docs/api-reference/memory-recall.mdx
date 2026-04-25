@@ -67,7 +67,3 @@ hm recall "JWT authentication decisions"
 ```
 POST /api/v1/memory/recall
 ```
-
-## Self-hosted equivalent
-
-The open-source server's `memory_recall` uses **regex-only** search with configurable `max_depth` (0–5, default 1), `max_nodes` (1–100, default 20), and `search_data` (bool, default `True`). It does not include vector similarity or session awareness.

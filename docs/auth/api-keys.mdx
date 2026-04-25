@@ -5,7 +5,7 @@ description: Key format, creation, rotation, and storage
 
 # API keys
 
-API keys authenticate requests to the hosted HyperMemory server when you are not using OAuth.
+API keys authenticate requests to HyperMemory when you are not using OAuth.
 
 ## Key format
 
@@ -17,17 +17,14 @@ API keys authenticate requests to the hosted HyperMemory server when you are not
 
 Keys are stored server-side as a SHA-256 hash. The full key is shown only once at creation time.
 
-## Key binding
-
-Each API key is bound to a specific graph at creation time. When authenticating with an API key, the middleware detects the `hm_` prefix and resolves your tenant from the `api_keys` system table.
-
 ## Create a key
 
-1. Go to **Dashboard > Settings > API Keys** at [app.hypermemory.io](https://app.hypermemory.io)
-2. Select the graph to bind the key to
-3. Choose a scope: `owner` (read + write) or `member` (read-only)
-4. Click **Create key**
-5. Copy the key — it is shown **once**
+1. Go to [app.hypermemory.io](https://app.hypermemory.io)
+2. Click **API Keys** in the main navigation
+3. Click **Create key**
+4. Select which **graph** the key will have access to (if your plan supports multiple graphs)
+5. Choose a scope: `owner` (read + write) or `member` (read-only)
+6. Copy the key — it is shown **once**
 
 ## Use a key
 
@@ -44,6 +41,10 @@ export HYPERMEMORY_API_KEY=hm_YOUR_KEY
 ```
 
 The `hm` CLI reads this variable automatically. See [MCP with API key](/connect/mcp-api-key) for client-specific configuration.
+
+## Key binding
+
+Each API key is bound to a specific graph at creation time. When authenticating with an API key, the middleware detects the `hm_` prefix and resolves your tenant from the `api_keys` system table.
 
 ## Key scopes
 
@@ -62,8 +63,4 @@ The `hm` CLI reads this variable automatically. See [MCP with API key](/connect/
 
 Revoking is immediate. The key stops working on the next request.
 
-Navigate to **Dashboard > Settings > API Keys** and click **Revoke** next to the key.
-
-## Self-hosted
-
-The open-source `src/server.py` has **no API key validation**. Keys only matter when connecting to the hosted service.
+Go to **API Keys** in the main navigation and click **Revoke** next to the key.

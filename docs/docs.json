@@ -26,14 +26,14 @@
             "pages": [
               "connect/mcp-oauth",
               "connect/mcp-api-key",
-              "connect/cli",
-              "connect/self-hosted"
+              "connect/cli"
             ]
           },
           {
             "group": "Integration Guides",
             "pages": [
-              "guides/claude",
+              "guides/claude-desktop",
+              "guides/claude-code",
               "guides/openclaw",
               "guides/crewai",
               "guides/n8n",
@@ -47,7 +47,7 @@
               "concepts/hypergraph",
               "concepts/nodes",
               "concepts/edges-and-hyperedges",
-              "concepts/linked-hypergraphs",
+              "concepts/memory-graphs",
               "concepts/temporal-memory"
             ]
           },
@@ -83,8 +83,7 @@
               "api-reference/memory-add-relationships",
               "api-reference/memory-get-relationships",
               "api-reference/memory-export-subgraph",
-              "api-reference/memory-load-link",
-              "api-reference/linked-hypergraph-tools"
+              "api-reference/memory-load-link"
             ]
           }
         ]
@@ -99,7 +98,7 @@
         },
         {
           "anchor": "GitHub",
-          "href": "https://github.com/RunStack-AI/hypergraph_memory",
+          "href": "https://github.com/RunStack-AI",
           "icon": "github"
         }
       ]

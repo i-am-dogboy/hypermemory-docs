@@ -5,43 +5,27 @@ description: Connect to HyperMemory in under a minute
 
 # Quickstart
 
-The fastest path: add HyperMemory as an MCP server in Claude Desktop or Claude Code with OAuth.
-
 ## 1. Sign up
 
 Go to [app.hypermemory.io/signup](https://app.hypermemory.io/signup) and create an account with GitHub.
 
-## 2. Add the MCP server
+## 2. Connect via OAuth (recommended)
 
-Open your Claude Desktop config file:
+Paste the HyperMemory server URL into any MCP-compatible client:
 
-| OS | Path |
-|---|---|
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Linux | `~/.config/Claude/claude_desktop_config.json` |
-
-Add HyperMemory:
-
-```json
-{
-  "mcpServers": {
-    "hypermemory": {
-      "url": "https://api.hypermemory.io/mcp"
-    }
-  }
-}
+```
+https://api.hypermemory.io/mcp
 ```
 
-Restart Claude Desktop. It will prompt you to authorize with your HyperMemory account via OAuth.
+Your client will open a browser window for OAuth verification. Sign in with GitHub, approve the connection, and you're done.
 
 <Tip>
-**Claude Code** — run `claude mcp add hypermemory --transport http https://api.hypermemory.io/mcp` instead.
+This works with **Claude Desktop**, **Claude Code**, **Cursor**, **Windsurf**, **OpenClaw**, and any MCP client that supports OAuth 2.1.
 </Tip>
 
 ## 3. Verify
 
-Ask Claude:
+Ask your agent:
 
 > What memory tools do you have?
 
@@ -51,16 +35,16 @@ You should see tools starting with `hm_` — `hm_store`, `hm_recall`, `hm_find_r
 
 > Remember that our project deadline is March 31st, 2026.
 
-Claude calls `hm_store` with a key, description, and optional structured data. The server triggers background enrichment to expand the description, extract entities, and create relationships automatically.
+Your agent calls `hm_store` with a key, description, and optional structured data. The server triggers background enrichment to expand the description, extract entities, and create relationships automatically.
 
 ## 5. Recall it
 
 > When is our project deadline?
 
-Claude calls `hm_recall`, which runs a hybrid search combining BM25 full-text matching, vector similarity, and regex to find the best results.
+Your agent calls `hm_recall`, which runs a hybrid search combining BM25 full-text matching, vector similarity, and regex to find the best results.
 
 ## Other connection methods
 
-- [MCP with API key](/connect/mcp-api-key) — for programmatic access
-- [CLI](/connect/cli) — `pip install hypermemory-cli`
-- [Self-hosted](/connect/self-hosted) — run the open-source server locally
+- [CLI with API key](/connect/cli) — `pip install hypermemory-cli`, then authenticate with an API key
+- [MCP with API key](/connect/mcp-api-key) — for programmatic access where OAuth isn't practical
+- [Config file setup](/guides/claude-code) — for clients that require manual MCP configuration

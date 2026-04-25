@@ -1,0 +1,45 @@
+---
+title: Claude Desktop
+description: Add HyperMemory to Claude Desktop with one URL
+---
+
+# Claude Desktop
+
+Adding HyperMemory to Claude Desktop takes under a minute. No config files, no API keys.
+
+## Setup
+
+1. Open **Claude Desktop**.
+2. Go to **Settings** > **MCP Servers** (or the equivalent MCP configuration area).
+3. Paste the server URL:
+
+```
+https://api.hypermemory.io/mcp
+```
+
+4. Name it **HyperMemory**.
+5. Claude Desktop opens a browser window for OAuth verification.
+6. Sign in with your **GitHub** account.
+7. Approve the connection.
+8. The HyperMemory tools are now available.
+
+That's it.
+
+## Verify
+
+Ask Claude:
+
+> What memory tools do you have?
+
+You should see 11 tools prefixed with `hm_` — `hm_store`, `hm_recall`, `hm_find_related`, `hm_get_overview`, `hm_ingest`, and more.
+
+## Usage
+
+- **Store:** "Remember that our deadline is March 31st" → triggers `hm_store`
+- **Recall:** "What do you know about deadlines?" → triggers `hm_recall`
+- **Ingest:** Paste a large block of text and ask Claude to ingest it → triggers `hm_ingest` to decompose it into graph entities in one LLM pass
+- **Timeline:** "What did I do last week?" → triggers `hm_timeline`
+
+<Tip>
+Be explicit when you want Claude to use memory. Claude may not call memory tools unless you prompt it to remember, recall, or look something up.
+</Tip>

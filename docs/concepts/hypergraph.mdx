@@ -71,16 +71,12 @@ Decision ──outcome──► Approved
 
 ## HyperMemory's data model
 
-The hosted service (SurrealDB-backed) stores data as:
-
 | Structure | Description |
 |---------|-------------|
 | **Nodes** | Keyed entities with `key`, `description`, `data`, and `node_type` |
 | **Edges** (`relates_to`) | Directed binary relationships between two nodes with a natural-language label |
 | **Hyperedges** | N-ary relationships connecting 3+ nodes via `hyperedge` + `participates_in` records |
 | **Ontology** | Auto-managed catalog of types (`onto_type`) and relationships (`onto_rel`) |
-
-The self-hosted open-source server stores all data in a single JSON file with the same logical structure.
 
 ## When to use edges vs hyperedges
 

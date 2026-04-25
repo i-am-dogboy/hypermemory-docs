@@ -1,6 +1,6 @@
 ---
 title: Scopes & permissions
-description: How access control works on the hosted service
+description: How access control works
 ---
 
 # Scopes & permissions
@@ -27,7 +27,7 @@ The OAuth 2.1 flow advertises three scopes:
 | `memory:admin` | Full access including administrative operations |
 
 <Info>
-Scope enforcement on the hosted service is primarily through **plan limits and rate limits**, not per-scope-string gating. All authenticated users have access to the tools their plan allows.
+Scope enforcement is primarily through **plan limits and rate limits**, not per-scope-string gating. All authenticated users have access to the tools their plan allows.
 </Info>
 
 ## Plan-based enforcement
@@ -43,7 +43,3 @@ Access to certain features depends on your plan tier:
 | Ingest rate limit (per min) | 3 | 5 | 20 | 40 | 60 |
 
 See [Plans](/billing/plans) for the complete tier comparison.
-
-## Self-hosted
-
-The open-source server does not enforce scopes or plan limits — all tools are available to any caller.

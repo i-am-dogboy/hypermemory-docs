@@ -7,7 +7,7 @@ description: How queries are counted and tracked
 
 ## What counts as a query
 
-Every `tools/call` request to the hosted MCP endpoint counts as one query, regardless of which tool is called. `tools/list` does not count.
+Every `tools/call` request to the MCP endpoint counts as one query, regardless of which tool is called. `tools/list` does not count.
 
 REST API calls to `/api/v1/memory/*` endpoints also count as queries.
 
@@ -58,7 +58,3 @@ Exceeding the rate limit returns HTTP 429.
 | `/v1/usage/history` | GET | Daily usage snapshots |
 
 Authenticate with a Bearer API key or OAuth token.
-
-## Self-hosted
-
-The open-source server has no usage tracking or rate limiting.

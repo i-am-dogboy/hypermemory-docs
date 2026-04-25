@@ -5,7 +5,7 @@ description: Connect HyperMemory to n8n workflows via MCP
 
 # n8n
 
-n8n's MCP node can connect directly to HyperMemory's hosted server, giving your workflows access to all 11 memory tools.
+n8n's MCP node can connect directly to HyperMemory, giving your workflows access to all 11 memory tools.
 
 ## Setup
 
@@ -44,8 +44,4 @@ https://api.hypermemory.io/mcp
 
 ## Available tools
 
-All 11 `hm_*` tools from the server are available through the MCP node. See [API Reference](/api-reference/overview) for parameters and response shapes.
-
-## Self-hosted
-
-If running the [open-source server](/connect/self-hosted) with the HTTP wrapper, point n8n at your local URL (e.g. `http://localhost:8080`) instead. No auth header is needed for the self-hosted server. Self-hosted tools use the `memory_*` prefix.
+All 11 `hm_*` tools are available through the MCP node. See [API Reference](/api-reference/overview) for parameters and response shapes.

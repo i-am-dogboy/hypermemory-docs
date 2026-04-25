@@ -7,7 +7,7 @@ description: How relationships are stored in HyperMemory
 
 ## Edges
 
-In the hosted HyperMemory service, an **edge** (`relates_to` record in SurrealDB) is a directed binary relationship between two nodes with:
+An **edge** (`relates_to` record in SurrealDB) is a directed binary relationship between two nodes with:
 
 | Field | Description |
 |---|---|
@@ -29,7 +29,7 @@ Edges are canonicalized by the server — relationship labels are normalized for
 
 ## Hyperedges
 
-A **hyperedge** connects three or more nodes in a single relationship. In the hosted service, this is implemented as a `hyperedge` record with `participates_in` links to each member node.
+A **hyperedge** connects three or more nodes in a single relationship. This is implemented as a `hyperedge` record with `participates_in` links to each member node.
 
 ### Example hyperedge
 
@@ -40,27 +40,9 @@ A **hyperedge** connects three or more nodes in a single relationship. In the ho
 }
 ```
 
-## In the open-source server
-
-The self-hosted server uses a unified `Edge` model where:
-
-- `nodes` is a list of string keys (length >= 2)
-- `relationship` is a natural-language label
-- `data` is optional JSON metadata
-
-A binary edge has two keys. A hyperedge has three or more — there is no separate wire format.
-
-```json
-{
-  "nodes": ["person_sarah", "project_phoenix"],
-  "relationship": "Sarah is the technical lead for Project Phoenix",
-  "data": {"since": "2026-01"}
-}
-```
-
 ## How relationships are created
 
-**At store time** — the `hm_store` tool triggers background enrichment that automatically detects entities and creates relationships.
+**At store time** — `hm_store` triggers background enrichment that automatically detects entities and creates relationships.
 
 **Explicitly** — use the REST API endpoint `POST /api/v1/memory/relationships` to create edges between existing nodes.
 
@@ -86,17 +68,13 @@ A binary edge has two keys. A hyperedge has three or more — there is no separa
 - **Graph traversal**: [`hm_find_related`](/api-reference/memory-find-related) walks from a starting node with configurable traversal strategies (chain, decay, type-boosted).
 - **REST endpoint**: `GET /api/v1/memory/relationships/{key}` lists edges connected to a specific node.
 
-<Info>
-**Direction** — In the open-source server, the `Edge` model is undirected membership with no separate source/target. If you need direction, encode it in the label ("A approves B") or in `data`. The hosted service uses directed `relates_to` records.
-</Info>
-
 ## Next steps
 
 <CardGroup cols={2}>
   <Card title="Nodes" icon="database" href="/concepts/nodes">
     Keys, descriptions, data
   </Card>
-  <Card title="Linked hypergraphs" icon="link" href="/concepts/linked-hypergraphs">
-    Multiple memory files and namespaces
+  <Card title="Memory graphs" icon="link" href="/concepts/memory-graphs">
+    Multiple isolated knowledge bases
   </Card>
 </CardGroup>

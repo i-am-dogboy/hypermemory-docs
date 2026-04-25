@@ -1,0 +1,56 @@
+---
+title: Claude Code
+description: Add HyperMemory to Claude Code via CLI or CLAUDE.md
+---
+
+# Claude Code
+
+Claude Code requires manual configuration — either through the CLI or by editing the `CLAUDE.md` file.
+
+## Option 1: CLI (recommended)
+
+Run this command to add HyperMemory as an MCP server:
+
+```bash
+claude mcp add hypermemory --transport http https://api.hypermemory.io/mcp
+```
+
+Claude Code will prompt you for OAuth verification the first time you use the tools.
+
+## Option 2: With API key
+
+If you prefer to use an API key instead of OAuth:
+
+```bash
+claude mcp add hypermemory \
+  --transport http \
+  --header "Authorization: Bearer hm_YOUR_KEY_HERE" \
+  https://api.hypermemory.io/mcp
+```
+
+Generate API keys at [app.hypermemory.io](https://app.hypermemory.io) under **API Keys** in the main navigation.
+
+## Option 3: CLAUDE.md configuration
+
+Add HyperMemory to your project's `CLAUDE.md` file so it's available in every session for that project:
+
+```markdown
+## MCP Servers
+
+- hypermemory: https://api.hypermemory.io/mcp (transport: http)
+```
+
+## Verify
+
+Ask Claude Code:
+
+> What memory tools do you have?
+
+You should see 11 tools prefixed with `hm_` — `hm_store`, `hm_recall`, `hm_find_related`, `hm_get_overview`, `hm_ingest`, and more.
+
+## Usage
+
+- **Store:** "Remember that our deadline is March 31st" → triggers `hm_store`
+- **Recall:** "What do you know about deadlines?" → triggers `hm_recall`
+- **Ingest:** Paste a large block of text and ask Claude to ingest it → triggers `hm_ingest`
+- **Timeline:** "What did I do last week?" → triggers `hm_timeline`

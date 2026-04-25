@@ -9,11 +9,11 @@ HyperMemory provides two layers of temporal awareness: **timestamps on graph obj
 
 ## Node and edge timestamps
 
-Every node and edge carries creation and update metadata. The hosted service stores these in SurrealDB with automatic tracking. The open-source server stores optional `time` fields (`created`, `updated`, update count) in the JSON file.
+Every node and edge carries creation and update metadata, stored in SurrealDB with automatic tracking.
 
-## Timeline system (hosted)
+## Timeline system
 
-The hosted service includes a separate timeline backed by PostgreSQL (not SurrealDB or Qdrant).
+HyperMemory includes a timeline backed by PostgreSQL (separate from SurrealDB and Qdrant).
 
 ### Auto-logging
 
@@ -58,10 +58,6 @@ The timeline is **not loaded automatically** — it is only recalled on explicit
 <Tip>
 **Use `hm_timeline_write`** for decisions and milestones — these create a clear audit trail separate from the graph.
 </Tip>
-
-## What the open-source server provides
-
-The self-hosted server does not include the PostgreSQL-backed timeline. Time-related data is limited to `Node.time` and `Edge.time` fields in the JSON file. To filter by date in the open-source server, encode dates in `description` or `data` and match them with regex queries.
 
 ## Next steps
 

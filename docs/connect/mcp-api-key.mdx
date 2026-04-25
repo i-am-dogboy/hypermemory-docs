@@ -17,7 +17,7 @@ The same MCP endpoint is used for both OAuth and API key authentication. The mid
 
 ## 1. Create a key
 
-Go to **Dashboard > Settings > API Keys** at [app.hypermemory.io](https://app.hypermemory.io) and create a new key.
+Go to [app.hypermemory.io](https://app.hypermemory.io) and click **API Keys** in the main navigation. Create a new key, select which graph it should access (if your plan supports multiple graphs), and choose a scope.
 
 Keys use the format `hm_` followed by 64 hexadecimal characters. Each key is bound to a specific graph at creation time.
 
@@ -27,18 +27,7 @@ Copy the key immediately — it is shown only once. Keys are stored server-side 
 
 ### Claude Desktop
 
-```json
-{
-  "mcpServers": {
-    "hypermemory": {
-      "url": "https://api.hypermemory.io/mcp",
-      "headers": {
-        "Authorization": "Bearer hm_YOUR_KEY_HERE"
-      }
-    }
-  }
-}
-```
+In Claude Desktop's MCP settings, add HyperMemory with the server URL and your API key in the Authorization header.
 
 ### Claude Code
 
@@ -83,7 +72,7 @@ curl -X POST https://api.hypermemory.io/mcp \
 
 ## Key management
 
-- **Revoke** keys at **Dashboard > Settings > API Keys**
+- **Revoke** keys at **API Keys** in the main navigation
 - **Rotate** by creating a new key and revoking the old one
 - The same plan limits and rate limits apply as with OAuth
 

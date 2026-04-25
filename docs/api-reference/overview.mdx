@@ -1,11 +1,11 @@
 ---
 title: API Reference
-description: All 11 MCP tools on the hosted HyperMemory service
+description: All 11 MCP tools on HyperMemory
 ---
 
 # API Reference
 
-The hosted HyperMemory service at `api.hypermemory.io` exposes 11 MCP tools over Streamable HTTP at `/mcp`. These tools are also accessible via the REST API and the `hm` CLI.
+HyperMemory exposes 11 MCP tools over Streamable HTTP at `https://api.hypermemory.io/mcp`. These tools are also accessible via the REST API and the `hm` CLI.
 
 ## MCP tools
 
@@ -54,7 +54,3 @@ All REST endpoints accept JSON bodies and require `Authorization: Bearer hm_YOUR
 | POST | `/api/v1/memory/timeline/write` | hm_timeline_write |
 | GET | `/api/v1/memory/health` | hm_health |
 | GET | `/api/v1/memory/export` | hm_export_full |
-
-## Self-hosted tools
-
-The open-source [hypergraph_memory](https://github.com/RunStack-AI/hypergraph_memory) server exposes `memory_*` tools (e.g. `memory_store`, `memory_recall`) plus linked hypergraph management tools. See [Self-hosted](/connect/self-hosted) and [Linked hypergraphs](/concepts/linked-hypergraphs) for details.

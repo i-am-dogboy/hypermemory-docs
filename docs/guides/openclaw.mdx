@@ -5,9 +5,21 @@ description: Add HyperMemory to OpenClaw agents
 
 # OpenClaw
 
-OpenClaw supports MCP servers natively. Add HyperMemory to your agent's MCP configuration.
+## Option 1: CLI (recommended)
 
-## With OAuth
+The simplest way to add HyperMemory to OpenClaw is through the CLI. Ask OpenClaw to add it:
+
+1. Tell OpenClaw to add the HyperMemory CLI.
+2. Provide the server URL: `https://api.hypermemory.io/mcp`
+3. OpenClaw adds the connection and prompts you for your API key.
+4. Enter your API key.
+5. Done.
+
+Generate API keys at [app.hypermemory.io](https://app.hypermemory.io) under **API Keys** in the main navigation.
+
+## Option 2: MCP server configuration
+
+If you want to add HyperMemory as an MCP server directly:
 
 ```json
 {
@@ -21,7 +33,7 @@ OpenClaw supports MCP servers natively. Add HyperMemory to your agent's MCP conf
 
 OpenClaw handles the OAuth 2.1 + PKCE flow — you sign in with GitHub when prompted.
 
-## With API key
+To use an API key instead of OAuth:
 
 ```json
 {
