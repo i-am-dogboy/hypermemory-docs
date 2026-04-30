@@ -7,30 +7,28 @@ description: Pricing tiers, limits, and features
 
 ## Tiers
 
-| Plan | Price | Queries/mo | Nodes/mo | Graphs |
+| Plan | Monthly | Queries/mo | Graphs | Overages |
 |---|---|---|---|---|
-| **Free** | $0/mo | 3,000 | 3,000 | 1 |
-| **Basic** | $12/mo | 25,000 | 25,000 | 1 |
-| **Pro** | $20/mo | 100,000 | 100,000 | 4 |
-| **Business** | $50/mo | 500,000 | 500,000 | 20 |
-| **Enterprise** | Custom | Custom | Custom | Unlimited |
+| **Free** | $0 | 2,000 | 1 | Hard limit — no overages |
+| **Basic** | $8 | 10,000 | 1 | $0.80 per 1,000 additional queries |
+| **Pro** | $15 | 200,000 | 4 | $0.08 per 1,000 additional queries |
+| **Business** | $50 | 500,000 | 20 | $0.10 per 1,000 additional queries |
+| **Enterprise** | Custom | Custom | Unlimited | Custom |
+
+Annual billing saves 10%.
 
 ## Features by plan
 
 | Feature | Free | Basic | Pro | Business | Enterprise |
 |---|---|---|---|---|---|
-| All MCP tools | Yes | Yes | Yes | Yes | Yes |
-| REST API | Yes | Yes | Yes | Yes | Yes |
-| CLI | Yes | Yes | Yes | Yes | Yes |
-| Hybrid search | Yes | Yes | Yes | Yes | Yes |
-| Enrichment | Yes | Yes | Yes | Yes | Yes |
-| Timeline | Yes | Yes | Yes | Yes | Yes |
+| All MCP tools | — | Yes | Yes | Yes | Yes |
+| Hypergraph CLI | Yes | Yes | Yes | Yes | Yes |
 | Community support | Yes | — | — | — | — |
-| Priority support | — | Yes | Yes | Yes | Yes |
+| Priority support | — | Yes | Yes | Yes | — |
+| Dedicated support | — | — | — | — | Yes |
 | File upload & storage | — | — | 1 GB | 100 GB | 1 TB |
 | Multiple graphs | — | — | 4 | 20 | Unlimited |
 | Advanced analytics | — | — | — | Yes | Yes |
-| Dedicated support | — | — | — | — | Yes |
 | SLA guarantees | — | — | — | — | Yes |
 | SSO / SAML | — | — | — | — | Yes |
 
@@ -58,6 +56,14 @@ Each plan has a maximum number of memory graphs (separate knowledge bases):
 | Enterprise | Unlimited |
 
 On plan downgrade, excess graphs become **frozen** (read-only). Upgrade to unfreeze.
+
+## Overages
+
+- **Free:** hard limit at 2,000 queries — no overages, requests stop.
+- **Basic:** $0.80 per 1,000 additional queries beyond 10,000.
+- **Pro:** $0.08 per 1,000 additional queries beyond 200,000.
+- **Business:** $0.10 per 1,000 additional queries beyond 500,000.
+- **Enterprise:** custom limits, no automatic cutoff.
 
 ## Manage your plan
 

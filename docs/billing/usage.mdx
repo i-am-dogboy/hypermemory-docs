@@ -1,6 +1,6 @@
 ---
 title: Usage
-description: How queries and nodes are counted and tracked
+description: How queries are counted and tracked
 ---
 
 # Usage
@@ -11,27 +11,30 @@ Every `tools/call` request to the MCP endpoint counts as one query, regardless o
 
 REST API calls to `/api/v1/memory/*` endpoints also count as queries.
 
-## What counts as a node
-
-Every node stored in the graph counts toward your monthly node limit. Nodes created by the enrichment pipeline (auto-detected entities from `hm_store` and `hm_ingest`) also count.
-
 ## Viewing usage
 
 Go to [app.hypermemory.io/usage](https://app.hypermemory.io/usage) to see:
 
 - Current period query count vs plan limit
-- Current period node count vs plan limit
 - Daily usage breakdown
 
-## Monthly limits
+## Monthly query limits
 
-| Plan | Queries/mo | Nodes/mo |
-|---|---|---|
-| Free | 3,000 | 3,000 |
-| Basic | 25,000 | 25,000 |
-| Pro | 100,000 | 100,000 |
-| Business | 500,000 | 500,000 |
-| Enterprise | Custom | Custom |
+| Plan | Queries/mo |
+|---|---|
+| Free | 2,000 |
+| Basic | 10,000 |
+| Pro | 200,000 |
+| Business | 500,000 |
+| Enterprise | Custom |
+
+## Overages
+
+- **Free:** hard limit — queries stop at 2,000. No overages.
+- **Basic:** $0.80 per 1,000 additional queries.
+- **Pro:** $0.08 per 1,000 additional queries.
+- **Business:** $0.10 per 1,000 additional queries.
+- **Enterprise:** custom limits.
 
 ## REST API usage endpoints
 
