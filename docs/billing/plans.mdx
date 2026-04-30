@@ -7,29 +7,32 @@ description: Pricing tiers, limits, and features
 
 ## Tiers
 
-| Plan | Graphs | Monthly queries | Storage | Write RPM | Read RPM | Ingest RPM |
-|---|---|---|---|---|---|---|
-| **Free** | 1 | 2,000 | — | 10 | 30 | 3 |
-| **Basic** | 1 | 10,000 | — | 30 | 60 | 5 |
-| **Pro** | 4 | 200,000 | 1 GB | 100 | 200 | 20 |
-| **Business** | 20 | 500,000 | 100 GB | 200 | 400 | 40 |
-| **Enterprise** | Unlimited | Unlimited | 1 TB | 300 | 600 | 60 |
-| **RunStack** | 1 | Unlimited | 10 GB | 300 | 600 | 60 |
-
-RPM = requests per minute per tenant.
+| Plan | Price | Queries/mo | Nodes/mo | Graphs |
+|---|---|---|---|---|
+| **Free** | $0/mo | 3,000 | 3,000 | 1 |
+| **Basic** | $12/mo | 25,000 | 25,000 | 1 |
+| **Pro** | $20/mo | 100,000 | 100,000 | 4 |
+| **Business** | $50/mo | 500,000 | 500,000 | 20 |
+| **Enterprise** | Custom | Custom | Custom | Unlimited |
 
 ## Features by plan
 
-| Feature | Free | Basic | Pro | Business | Enterprise | RunStack |
-|---|---|---|---|---|---|---|
-| MCP tools (11) | Yes | Yes | Yes | Yes | Yes | Yes |
-| REST API | Yes | Yes | Yes | Yes | Yes | Yes |
-| CLI | Yes | Yes | Yes | Yes | Yes | Yes |
-| Hybrid search | Yes | Yes | Yes | Yes | Yes | Yes |
-| Enrichment | Yes | Yes | Yes | Yes | Yes | Yes |
-| Timeline | Yes | Yes | Yes | Yes | Yes | Yes |
-| File upload | — | — | Yes | Yes | Yes | Yes |
-| Multiple graphs | — | — | Yes | Yes | Yes | — |
+| Feature | Free | Basic | Pro | Business | Enterprise |
+|---|---|---|---|---|---|
+| All MCP tools | Yes | Yes | Yes | Yes | Yes |
+| REST API | Yes | Yes | Yes | Yes | Yes |
+| CLI | Yes | Yes | Yes | Yes | Yes |
+| Hybrid search | Yes | Yes | Yes | Yes | Yes |
+| Enrichment | Yes | Yes | Yes | Yes | Yes |
+| Timeline | Yes | Yes | Yes | Yes | Yes |
+| Community support | Yes | — | — | — | — |
+| Priority support | — | Yes | Yes | Yes | Yes |
+| File upload & storage | — | — | 1 GB | 100 GB | 1 TB |
+| Multiple graphs | — | — | 4 | 20 | Unlimited |
+| Advanced analytics | — | — | — | Yes | Yes |
+| Dedicated support | — | — | — | — | Yes |
+| SLA guarantees | — | — | — | — | Yes |
+| SSO / SAML | — | — | — | — | Yes |
 
 ## File storage limits
 
@@ -40,13 +43,12 @@ RPM = requests per minute per tenant.
 | Pro | 1 GB |
 | Business | 100 GB |
 | Enterprise | 1 TB |
-| RunStack | 10 GB |
 
 Files are stored in S3 (Scaleway). Text files are decoded directly and summarized by an LLM. Binary, office, and image files are processed through LlamaParse extraction before summarization. Each uploaded file creates a graph node with the AI-generated summary.
 
 ## Graph limits
 
-Each plan has a maximum number of graphs (separate knowledge bases):
+Each plan has a maximum number of memory graphs (separate knowledge bases):
 
 | Plan | Graphs |
 |---|---|
@@ -54,7 +56,6 @@ Each plan has a maximum number of graphs (separate knowledge bases):
 | Pro | 4 |
 | Business | 20 |
 | Enterprise | Unlimited |
-| RunStack | 1 |
 
 On plan downgrade, excess graphs become **frozen** (read-only). Upgrade to unfreeze.
 
